@@ -178,10 +178,15 @@ var startTtl = function (db, checkFrequency) {
           if (entry.type == 'del')
             off.push(entry.key)
         })
+
         if (on.length)
           ttlon(db, on, options.ttl, done)
+        else
+          done()
         if (off.length)
           ttloff(db, off, done)
+        else
+          done()
       }
 
       db._ttl.batch.call(db, arr, options, callback)
