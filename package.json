@@ -1,7 +1,7 @@
 {
     "name"             : "level-ttl"
   , "description"      : "Adds a 'ttl' option to LevelUP for puts and batches"
-  , "version"          : "0.0.0"
+  , "version"          : "0.0.1"
   , "homepage"         : "https://github.com/rvagg/node-level-ttl"
   , "authors"          : [
         "Rod Vagg <rod@vagg.org> (https://github.com/rvagg)"
