@@ -4,7 +4,7 @@
 
 **Add a `'ttl'` (time-to-live) option to LevelUP for `put()` and `batch()`**
 
-Augment the standard implementations to handle a new `'ttl'` option that specifies the number of milliseconds an entry should remain in the data store. After the TTL, the entry will be automatically cleared for you.
+Augment LevelUP to handle a new `'ttl'` option on `put()` and `batch()` that specifies the number of milliseconds an entry should remain in the data store. After the TTL, the entry will be automatically cleared for you.
 
 ```js
 var levelup = require('levelup')
@@ -13,11 +13,11 @@ var levelup = require('levelup')
 levelup('/tmp/foo.db', function (err, db) {
   db = ttl(db)
 
-  // ------ put() -------- //
+  // --------------------------- put() --------------------------- //
   // this entry will only stay in the data store for 1 hour
   db.put('foo', 'bar', { ttl: 1000 * 60 * 60 }, function (err) { /* .. */ })
 
-  // ------ batch() -------- //
+  // -------------------------- batch() -------------------------- //
   // the two 'put' entries will only stay in the data store for 1 hour
   db.batch([
       { type: 'put', key: 'foo', value: 'bar' }
@@ -27,7 +27,7 @@ levelup('/tmp/foo.db', function (err, db) {
 })
 ```
 
-If you put the same entry twice, you **refresh** the TTL to the last put operation. In this way you can build utilities like [session managers](https://github.com/rvagg/node-level-session/) for your web application where the user's session is refreshed with each visit but expires after a set period of time since their last visit.
+If you put the same entry twice, you **refresh** the TTL to the *last* put operation. In this way you can build utilities like [session managers](https://github.com/rvagg/node-level-session/) for your web application where the user's session is refreshed with each visit but expires after a set period of time since their last visit.
 
 **Level TTL** uses an internal scan every 10 seconds by default, this limits the available resolution of your TTL values, possibly delaying a delete for up to 10 seconds. The resolution can be tuned by passing the `'checkFrequency'` option to the `ttl()` initialiser.
 
@@ -40,7 +40,7 @@ levelup('/tmp/foo.db', function (err, db) {
 })
 ```
 
-Of course, a scan takes some resources, particularly on a data store that makes heavy use of TTLs. If you don't require high accuracy for actual deletions then you can increase the `'checkFrequency'`. Note though that a scan only involves invoking a LevelUP ReadStream that returns *only the entries due to expire*, so it doesn't have to manually check through all entries with a TTL. So it may be best to not do too much tuning until you have you have something worth tuning.
+Of course, a scan takes some resources, particularly on a data store that makes heavy use of TTLs. If you don't require high accuracy for actual deletions then you can increase the `'checkFrequency'`. Note though that a scan only involves invoking a LevelUP ReadStream that returns *only the entries due to expire*, so it doesn't have to manually check through all entries with a TTL. As usual, it's best to not do too much tuning until you have you have something worth tuning!
 
 ## Licence
 
