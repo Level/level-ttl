@@ -8,9 +8,14 @@ var startTtl = function (db, checkFrequency) {
       db._ttl.intervalId = setInterval(function () {
         var batch    = []
           , subBatch = []
+          , query = {
+                keyEncoding: 'utf8'
+              , valueEncoding: 'utf8'
+              , end: String(Date.now())
+            }
 
         db._ttl._checkInProgress = true
-        db._ttl.sub.createReadStream({ end: String(Date.now()) })
+        db._ttl.sub.createReadStream(query)
           .on('data', function (data) {
             subBatch.push({ type: 'del', key: data.value })
             subBatch.push({ type: 'del', key: data.key })
