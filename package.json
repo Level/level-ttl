@@ -14,14 +14,14 @@
     }
   , "dependencies"     : {
         "after"            : "~0.7.0"
-      , "level-sublevel"   : "~4.6.1"
+      , "level-sublevel"   : "~4.7.0"
       , "xtend"            : "~2.0.3"
     }
   , "peerDependencies" : {
     }
   , "devDependencies"  : {
         "tap"              : "*"
-      , "levelup"          : "~0.8.0"
+      , "level"          : "*"
       , "rimraf"           : "~2.1.4"
     }
   , "scripts"          : {
