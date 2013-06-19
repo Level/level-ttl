@@ -3,7 +3,7 @@ const test     = require('tap').test
     , levelup  = require('levelup')
     , ttl      = require('./')
 
-var ltest = function (name, fn) {
+var ltest = function (name, fn, opts) {
   test(name, function (t) {
     var location = '__ttl-' + Math.random()
       , db
@@ -16,7 +16,7 @@ var ltest = function (name, fn) {
       })
     }
 
-    levelup(location, function (err, _db) {
+    levelup(location, opts, function (err, _db) {
       t.notOk(err, 'no error on open()')
 
       var createReadStream = _db.createReadStream.bind(_db)
@@ -27,9 +27,9 @@ var ltest = function (name, fn) {
   })
 }
 
-function db2arr (createReadStream, t, callback) {
+function db2arr (createReadStream, t, callback, opts) {
   var arr = []
-  createReadStream()
+  createReadStream(opts)
     .on('data', arr.push.bind(arr))
     .on('error', function (err) {
       t.fail(err)
@@ -273,3 +273,46 @@ ltest('test del', function (db, t, createReadStream) {
   verify(-1, 70)
   setTimeout(t.end.bind(t), 300)
 })
+
+ltest('test del with db value encoding', function (db, t, createReadStream) {
+  var verify = function (base, delay) {
+        setTimeout(function () {
+          db2arr(createReadStream, t, function (err, arr) {
+            t.notOk(err, 'no error')
+            if (base == -1) {
+              // test complete deletion
+              t.deepEqual(arr, [
+                  { key: 'foo', value: "{\"v\":\"foovalue\"}" }
+              ])
+            } else {
+              var ts = base + 197
+                , i  = 0
+              // allow +/- 10ms leeway, allow for processing speed and Node timer inaccuracy
+              for (; i < 10 && arr[3] && arr[3].value; i++) {
+                if (arr[3] && arr[3].value == String(ts))
+                  break
+                ts++
+              }
+              t.deepEqual(arr, [
+                  { key: 'bar', value: "{\"v\":\"barvalue\"}" }
+                , { key: 'foo', value: "{\"v\":\"foovalue\"}" }
+                , { key: 'ÿttlÿ' + ts + 'ÿbar', value: 'bar' }
+                , { key: 'ÿttlÿbar', value: String(ts) }
+              ])
+            }
+          }, { valueEncoding: "utf8" })
+        }, delay)
+      }
+    , base
+
+  db.put( 'foo', { v: 'foovalue' })
+  base = Date.now()
+  db.put('bar', { v: 'barvalue' }, { ttl: 200 })
+  verify(base, 20)
+  setTimeout(function () {
+    db.del('bar')
+  }, 50)
+  // should not exist at all by 70
+  verify(-1, 70)
+  setTimeout(t.end.bind(t), 300)
+}, { keyEncoding: 'utf8', valueEncoding: 'json' })
