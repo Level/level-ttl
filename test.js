@@ -316,3 +316,46 @@ ltest('test del with db value encoding', function (db, t, createReadStream) {
   verify(-1, 70)
   setTimeout(t.end.bind(t), 300)
 }, { keyEncoding: 'utf8', valueEncoding: 'json' })
+
+ltest('test del with db key encoding', function (db, t, createReadStream) {
+  var verify = function (base, delay) {
+        setTimeout(function () {
+          db2arr(createReadStream, t, function (err, arr) {
+            t.notOk(err, 'no error')
+            if (base == -1) {
+              // test complete deletion
+              t.deepEqual(arr, [
+                  { key: 'foo', value: "{\"v\":\"foovalue\"}" }
+              ])
+            } else {
+              var ts = base + 197
+                , i  = 0
+              // allow +/- 10ms leeway, allow for processing speed and Node timer inaccuracy
+              for (; i < 10 && arr[3] && arr[3].value; i++) {
+                if (arr[3] && arr[3].value == String(ts))
+                  break
+                ts++
+              }
+              t.deepEqual(arr, [
+                  { key: "{\"k\":\"bar\"}", value: "{\"v\":\"barvalue\"}" }
+                , { key: "{\"k\":\"foo\"}", value: "{\"v\":\"foovalue\"}" }
+                , { key: 'ÿttlÿ' + ts + 'ÿbar', value: 'bar' }
+                , { key: 'ÿttlÿbar', value: String(ts) }
+              ])
+            }
+          }, { keyEncoding: "utf8" })
+        }, delay)
+      }
+    , base
+
+  db.put({ k: 'foo' }, 'foovalue')
+  base = Date.now()
+  db.put({ k: 'bar' }, 'barvalue', { ttl: 200 })
+  verify(base, 20)
+  setTimeout(function () {
+    db.del('bar')
+  }, 50)
+  // should not exist at all by 70
+  verify(-1, 70)
+  setTimeout(t.end.bind(t), 300)
+}, { keyEncoding: 'json', valueEncoding: 'utf8' })
