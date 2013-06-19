@@ -1,6 +1,6 @@
 const test     = require('tap').test
     , rimraf   = require('rimraf')
-    , levelup  = require('levelup')
+    , levelup  = require('level')
     , ttl      = require('./')
 
 var ltest = function (name, fn, opts) {
