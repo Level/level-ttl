@@ -1,6 +1,7 @@
 const after    = require('after')
     , xtend    = require('xtend')
     , sublevel = require('level-sublevel')
+    , bytewise = require('bytewise')
 
     , DEFAULT_FREQUENCY = 10000
 
@@ -10,16 +11,19 @@ var startTtl = function (db, checkFrequency) {
           , subBatch = []
           , query = {
                 keyEncoding: 'utf8'
-              , valueEncoding: 'utf8'
-              , end: String(Date.now())
+              , valueEncoding: 'binary'
+              , end: bytewise.encode([String(Date.now())]).toString()
             }
 
         db._ttl._checkInProgress = true
         db._ttl.sub.createReadStream(query)
           .on('data', function (data) {
-            subBatch.push({ type: 'del', key: data.value })
+            console.log("todelete.key", data.key + "\n")
+            console.log("todelete.value", data.value)
+            var value = bytewise.decode(data.value)
+            subBatch.push({ type: 'del', key: bytewise.encode([value]).toString() })
             subBatch.push({ type: 'del', key: data.key })
-            batch.push({ type: 'del', key: data.value })
+            batch.push({ type: 'del', key: value })
           })
           .on('error', db.emit.bind(db, 'error'))
           .on('end', function () {
@@ -34,7 +38,6 @@ var startTtl = function (db, checkFrequency) {
               )
               db._ttl.batch(
                   batch
-                , { keyEncoding: 'utf8' }
                 , function (err) {
                     if (err)
                       db.emit('error', err)
@@ -70,10 +73,14 @@ var startTtl = function (db, checkFrequency) {
 
       ttloff(db, keys, function () {
         keys.forEach(function (key) {
-          if (typeof key != 'string')
-            key = key.toString()
-          batch.push({ type: 'put', key: key               , value: exp })
-          batch.push({ type: 'put', key: exp + '\xff' + key, value: key })
+          console.log(bytewise.decode(bytewise.encode(key)))
+          batch.push({ type: 'put', key: bytewise.encode([key]).toString()      , value: bytewise.encode(exp) })
+          batch.push({ type: 'put', key: bytewise.encode([exp, key]).toString() , value: bytewise.encode(key) })
+        })
+
+        batch.forEach(function(op) {
+          console.log("op.key", op.key)
+          console.log("op.value", op.value)
         })
 
         if (!batch.length)
@@ -81,7 +88,7 @@ var startTtl = function (db, checkFrequency) {
 
         db._ttl.sub.batch(
             batch
-          , { keyEncoding: 'utf8', valueEncoding: 'utf8' }
+          , { keyEncoding: 'utf8', valueEncoding: 'binary' }
           , function (err) {
               if (err)
                 db.emit('error', err)
@@ -105,7 +112,7 @@ var startTtl = function (db, checkFrequency) {
 
             db._ttl.sub.batch(
                 batch
-              , { keyEncoding: 'utf8', valueEncoding: 'utf8' }
+              , { keyEncoding: 'utf8', valueEncoding: 'binary' }
               , function (err) {
                   if (err)
                     db.emit('error', err)
@@ -115,16 +122,16 @@ var startTtl = function (db, checkFrequency) {
           })
 
       keys.forEach(function (key) {
-        if (typeof key != 'string')
-          key = key.toString()
-
         db._ttl.sub.get(
-            key
-          , { keyEncoding: 'utf8', valueEncoding: 'utf8' }
+            bytewise.encode([key]).toString()
+          , { keyEncoding: 'utf8', valueEncoding: 'binary' }
           , function (err, exp) {
+              if (exp) {
+                exp = bytewise.decode(exp);
+              }
               if (!err && exp > 0) {
-                batch.push({ type: 'del', key: key })
-                batch.push({ type: 'del', key: exp + '\xff' + key })
+                batch.push({ type: 'del', key: bytewise.encode([key]).toString() })
+                batch.push({ type: 'del', key: bytewise.encode([exp, key]).toString() })
               }
               done(err && err.name != 'NotFoundError' && err)
             }

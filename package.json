@@ -16,6 +16,7 @@
         "after"            : "~0.7.0"
       , "level-sublevel"   : "~4.7.0"
       , "xtend"            : "~2.0.3"
+      , "bytewise"         : "~0.6.0"
     }
   , "peerDependencies" : {
     }
