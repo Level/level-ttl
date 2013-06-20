@@ -2,6 +2,7 @@ const test     = require('tap').test
     , rimraf   = require('rimraf')
     , levelup  = require('level')
     , ttl      = require('./')
+    , bytewise = require('bytewise')
 
 var ltest = function (name, fn, opts) {
   test(name, function (t) {
@@ -27,14 +28,25 @@ var ltest = function (name, fn, opts) {
   })
 }
 
-function db2arr (createReadStream, t, callback, opts) {
+function db2arr (createReadStream, t, callback) {
   var arr = []
-  createReadStream(opts)
+
+  createReadStream({ keyEncoding: 'utf8', valueEncoding: 'binary' })
     .on('data', arr.push.bind(arr))
     .on('error', function (err) {
       t.fail(err)
     })
     .on('close', callback.bind(null, null, arr))
+}
+
+function arrToUtf8(arr) {
+  arr.forEach(dataToUtf8)
+  return arr
+}
+
+function dataToUtf8(obj) {
+  obj.value = obj.value.toString('utf8')
+  return obj
 }
 
 /*
@@ -66,19 +78,22 @@ ltest('test single ttl entry with put', function (db, t, createReadStream) {
       db2arr(createReadStream, t, function (err, arr) {
         t.notOk(err, 'no error')
         var ts = base + 100
+
         // allow 1ms leeway
-        if (arr[3] && arr[3].value != String(ts))
+        if (arr[3] && bytewise.decode(arr[3].value) != String(ts))
           ts++
-        t.deepEqual(arr, [
+
+        t.deepEqual(arrToUtf8(arr), [
             { key: 'bar', value: 'barvalue' }
           , { key: 'foo', value: 'foovalue' }
-          , { key: 'ÿttlÿ' + ts + 'ÿbar', value: 'bar' }
-          , { key: 'ÿttlÿbar', value: String(ts) }
+          , { key: 'ÿttlÿ' + bytewise.encode([String(ts), 'bar']), value: bytewise.encode('bar').toString('utf8') }
+          , { key: 'ÿttlÿ' + bytewise.encode(['bar']), value: bytewise.encode(String(ts)).toString('utf8') }
         ])
         setTimeout(function () {
           db2arr(createReadStream, t, function (err, arr) {
             t.notOk(err, 'no error')
-            t.deepEqual(arr, [
+
+            t.deepEqual(arrToUtf8(arr), [
                 { key: 'foo', value: 'foovalue' }
             ])
 
@@ -97,26 +112,27 @@ ltest('test multiple ttl entries with put', function (db, t, createReadStream) {
             var _kl = Math.floor((arr.length - 1) / 3)
             t.notOk(err, 'no error')
             t.equal(arr.length, 1 + keys * 3, 'correct number of entries in db')
-            t.deepEqual(arr[0], { key: 'afoo', value: 'foovalue' })
+            t.deepEqual(dataToUtf8(arr[0]), { key: 'afoo', value: 'foovalue' })
+
             if (keys >= 1) {
-              t.deepEqual(arr[1], { key: 'bar1', value: 'barvalue1' })
-              t.equal(arr[1 + _kl * 2 - 1].value, 'bar1')
-              t.like(arr[1 + _kl * 2 - 1].key, /^ÿttlÿ\d{13}ÿbar1$/)
-              t.equal(arr[1 + _kl * 2].key, 'ÿttlÿbar1')
+              t.deepEqual(dataToUtf8(arr[1]), { key: 'bar1', value: 'barvalue1' })
+              t.equal(arr[1 + _kl * 2 - 1].value.toString(), 'pbar1')
+              //t.like(arr[1 + _kl * 2 - 1].key, /^ÿttlÿ\d{13}ÿpbar1$/)
+              t.equal(arr[1 + _kl * 2].key, 'ÿttlÿ' + bytewise.encode(['bar1']))
               t.like(arr[1 + _kl * 2].value, /^\d{13}$/)
             }
             if (keys >= 2) {
-              t.deepEqual(arr[2], { key: 'bar2', value: 'barvalue2' })
-              t.equal(arr[1 + _kl * 2 - 2].value, 'bar2')
-              t.like(arr[1 + _kl * 2 - 2].key, /^ÿttlÿ\d{13}ÿbar2$/)
-              t.equal(arr[1 + _kl * 2 + 1].key, 'ÿttlÿbar2')
+              t.deepEqual(dataToUtf8(arr[2]), { key: 'bar2', value: 'barvalue2' })
+              t.equal(arr[1 + _kl * 2 - 2].value.toString(), 'pbar2')
+              //t.like(arr[1 + _kl * 2 - 2].key, /^ÿttlÿ\d{13}ÿbar2$/)
+              t.equal(arr[1 + _kl * 2 + 1].key, 'ÿttlÿ' + bytewise.encode(['bar2']))
               t.like(arr[1 + _kl * 2 + 1].value, /^\d{13}$/)
             }
             if (keys >= 3) {
-              t.deepEqual(arr[3], { key: 'bar3', value: 'barvalue3' })
-              t.equal(arr[1 + _kl  * 2 - 3].value, 'bar3')
-              t.like(arr[1 + _kl * 2 - 3].key, /^ÿttlÿ\d{13}ÿbar3$/)
-              t.equal(arr[1 + _kl * 2 + 2].key, 'ÿttlÿbar3')
+              t.deepEqual(dataToUtf8(arr[3]), { key: 'bar3', value: 'barvalue3' })
+              t.equal(arr[1 + _kl  * 2 - 3].value.toString(), 'pbar3')
+              //t.like(arr[1 + _kl * 2 - 3].key, /^ÿttlÿ\d{13}ÿbar3$/)
+              t.equal(arr[1 + _kl * 2 + 2].key, 'ÿttlÿ' + bytewise.encode(['bar3']))
               t.like(arr[1 + _kl * 2 + 2].value, /^\d{13}$/)
             }
           })
@@ -143,33 +159,33 @@ ltest('test multiple ttl entries with batch-put', function (db, t, createReadStr
             var _kl = Math.floor((arr.length - 1) / 3)
             t.notOk(err, 'no error')
             t.equal(arr.length, 1 + keys * 3, 'correct number of entries in db')
-            t.deepEqual(arr[0], { key: 'afoo', value: 'foovalue' })
+            t.deepEqual(dataToUtf8(arr[0]), { key: 'afoo', value: 'foovalue' })
             if (keys >= 1) {
-              t.deepEqual(arr[1], { key: 'bar1', value: 'barvalue1' })
-              t.equal(arr[1 + _kl * 1].value, 'bar1')
-              t.like(arr[1 + _kl * 1].key, /^ÿttlÿ\d{13}ÿbar1$/)
-              t.equal(arr[1 + _kl * 2].key, 'ÿttlÿbar1')
+              t.deepEqual(dataToUtf8(arr[1]), { key: 'bar1', value: 'barvalue1' })
+              t.equal(arr[1 + _kl * 1].value.toString(), 'pbar1')
+              //t.like(arr[1 + _kl * 1].key, /^ÿttlÿ\d{13}ÿbar1$/)
+              t.equal(arr[1 + _kl * 2].key, 'ÿttlÿ' + bytewise.encode(['bar1']))
               t.like(arr[1 + _kl * 2].value, /^\d{13}$/)
             }
             if (keys >= 2) {
-              t.deepEqual(arr[2], { key: 'bar2', value: 'barvalue2' })
-              t.equal(arr[1 + _kl * 1 + 1].value, 'bar2')
-              t.like(arr[1 + _kl * 1 + 1].key, /^ÿttlÿ\d{13}ÿbar2$/)
-              t.equal(arr[1 + _kl * 2 + 1].key, 'ÿttlÿbar2')
+              t.deepEqual(dataToUtf8(arr[2]), { key: 'bar2', value: 'barvalue2' })
+              t.equal(arr[1 + _kl * 1 + 1].value.toString(), 'pbar2')
+              //t.like(arr[1 + _kl * 1 + 1].key, /^ÿttlÿ\d{13}ÿbar2$/)
+              t.equal(arr[1 + _kl * 2 + 1].key, 'ÿttlÿ' + bytewise.encode(['bar2']))
               t.like(arr[1 + _kl * 2 + 1].value, /^\d{13}$/)
             }
             if (keys >= 3) {
-              t.deepEqual(arr[3], { key: 'bar3', value: 'barvalue3' })
-              t.equal(arr[1 + _kl  * 1 + 2].value, 'bar3')
-              t.like(arr[1 + _kl * 1 + 2].key, /^ÿttlÿ\d{13}ÿbar3$/)
-              t.equal(arr[1 + _kl * 2 + 2].key, 'ÿttlÿbar3')
+              t.deepEqual(dataToUtf8(arr[3]), { key: 'bar3', value: 'barvalue3' })
+              t.equal(arr[1 + _kl  * 1 + 2].value.toString(), 'pbar3')
+              //t.like(arr[1 + _kl * 1 + 2].key, /^ÿttlÿ\d{13}ÿbar3$/)
+              t.equal(arr[1 + _kl * 2 + 2].key, 'ÿttlÿ' + bytewise.encode(['bar3']))
               t.like(arr[1 + _kl * 2 + 2].value, /^\d{13}$/)
             }
             if (keys >= 4) {
-              t.deepEqual(arr[4], { key: 'bar4', value: 'barvalue4' })
-              t.equal(arr[1 + _kl  * 1 + 3].value, 'bar4')
-              t.like(arr[1 + _kl * 1 + 3].key, /^ÿttlÿ\d{13}ÿbar4$/)
-              t.equal(arr[1 + _kl * 2 + 3].key, 'ÿttlÿbar4')
+              t.deepEqual(dataToUtf8(arr[4]), { key: 'bar4', value: 'barvalue4' })
+              t.equal(arr[1 + _kl  * 1 + 3].value.toString(), 'pbar4')
+              //t.like(arr[1 + _kl * 1 + 3].key, /^ÿttlÿ\d{13}ÿbar4$/)
+              t.equal(arr[1 + _kl * 2 + 3].key, 'ÿttlÿ' + bytewise.encode(['bar4']))
               t.like(arr[1 + _kl * 2 + 3].value, /^\d{13}$/)
             }
           })
@@ -202,17 +218,19 @@ ltest('test prolong entry life with additional put', function (db, t, createRead
             t.notOk(err, 'no error')
             var ts = base + 37
               , i  = 0
+
             // allow +/- 3ms leeway, allow for processing speed and Node timer inaccuracy
-            for (; i < 6 && arr[3] && arr[3].value; i++) {
-              if (arr[3] && arr[3].value == String(ts))
+            for (; i < 3 && arr[3] && arr[3].value; i++) {
+              if (arr[3] && bytewise.decode(arr[3].value) == String(ts))
                 break
               ts++
             }
-            t.deepEqual(arr, [
+
+            t.deepEqual(arrToUtf8(arr), [
                 { key: 'bar', value: 'barvalue' }
               , { key: 'foo', value: 'foovalue' }
-              , { key: 'ÿttlÿ' + ts + 'ÿbar', value: 'bar' }
-              , { key: 'ÿttlÿbar', value: String(ts) }
+              , { key: 'ÿttlÿ' + bytewise.encode([String(ts), 'bar']), value: bytewise.encode('bar').toString() }
+              , { key: 'ÿttlÿ' + bytewise.encode(['bar']), value: bytewise.encode(String(ts)).toString() }
             ])
           })
         }, delay)
@@ -238,7 +256,7 @@ ltest('test del', function (db, t, createReadStream) {
             t.notOk(err, 'no error')
             if (base == -1) {
               // test complete deletion
-              t.deepEqual(arr, [
+              t.deepEqual(arrToUtf8(arr), [
                   { key: 'foo', value: 'foovalue' }
               ])
             } else {
@@ -246,15 +264,15 @@ ltest('test del', function (db, t, createReadStream) {
                 , i  = 0
               // allow +/- 3ms leeway, allow for processing speed and Node timer inaccuracy
               for (; i < 6 && arr[3] && arr[3].value; i++) {
-                if (arr[3] && arr[3].value == String(ts))
+                if (arr[3] && bytewise.decode(arr[3].value) == String(ts))
                   break
                 ts++
               }
-              t.deepEqual(arr, [
+              t.deepEqual(arrToUtf8(arr), [
                   { key: 'bar', value: 'barvalue' }
                 , { key: 'foo', value: 'foovalue' }
-                , { key: 'ÿttlÿ' + ts + 'ÿbar', value: 'bar' }
-                , { key: 'ÿttlÿbar', value: String(ts) }
+                , { key: 'ÿttlÿ' + bytewise.encode([String(ts), 'bar']), value: bytewise.encode('bar').toString() }
+                , { key: 'ÿttlÿ' + bytewise.encode(['bar']), value: bytewise.encode(String(ts)).toString() }
               ])
             }
           })
@@ -281,7 +299,7 @@ ltest('test del with db value encoding', function (db, t, createReadStream) {
             t.notOk(err, 'no error')
             if (base == -1) {
               // test complete deletion
-              t.deepEqual(arr, [
+              t.deepEqual(arrToUtf8(arr), [
                   { key: 'foo', value: "{\"v\":\"foovalue\"}" }
               ])
             } else {
@@ -289,15 +307,15 @@ ltest('test del with db value encoding', function (db, t, createReadStream) {
                 , i  = 0
               // allow +/- 10ms leeway, allow for processing speed and Node timer inaccuracy
               for (; i < 10 && arr[3] && arr[3].value; i++) {
-                if (arr[3] && arr[3].value == String(ts))
+                if (arr[3] && bytewise.decode(arr[3].value) == String(ts))
                   break
                 ts++
               }
-              t.deepEqual(arr, [
+              t.deepEqual(arrToUtf8(arr), [
                   { key: 'bar', value: "{\"v\":\"barvalue\"}" }
                 , { key: 'foo', value: "{\"v\":\"foovalue\"}" }
-                , { key: 'ÿttlÿ' + ts + 'ÿbar', value: 'bar' }
-                , { key: 'ÿttlÿbar', value: String(ts) }
+                , { key: 'ÿttlÿ' + bytewise.encode([String(ts), 'bar']), value: bytewise.encode('bar').toString() }
+                , { key: 'ÿttlÿ' + bytewise.encode(['bar']), value: bytewise.encode(String(ts)).toString() }
               ])
             }
           }, { valueEncoding: "utf8" })
@@ -316,3 +334,46 @@ ltest('test del with db value encoding', function (db, t, createReadStream) {
   verify(-1, 70)
   setTimeout(t.end.bind(t), 300)
 }, { keyEncoding: 'utf8', valueEncoding: 'json' })
+
+ltest('test del with db key encoding', function (db, t, createReadStream) {
+  var verify = function (base, delay) {
+        setTimeout(function () {
+          db2arr(createReadStream, t, function (err, arr) {
+            t.notOk(err, 'no error')
+            if (base == -1) {
+              // test complete deletion
+              t.deepEqual(arrToUtf8(arr), [
+                  { key: "{\"k\":\"foo\"}", value: "foovalue" }
+              ])
+            } else {
+              var ts = base + 197
+                , i  = 0
+              // allow +/- 10ms leeway, allow for processing speed and Node timer inaccuracy
+              for (; i < 10 && arr[3] && arr[3].value; i++) {
+                if (arr[3] && bytewise.decode(arr[3].value) == String(ts))
+                  break
+                ts++
+              }
+              t.deepEqual(arrToUtf8(arr), [
+                  { key: "{\"k\":\"bar\"}", value: "barvalue" }
+                , { key: "{\"k\":\"foo\"}", value: "foovalue" }
+                , { key: 'ÿttlÿ' + bytewise.encode([String(ts), { k: 'bar' }]), value: bytewise.encode({ k: 'bar' }).toString('utf8') }
+                , { key: 'ÿttlÿ' + bytewise.encode([{ k: 'bar' }]), value: bytewise.encode(String(ts)).toString('utf8') }
+              ])
+            }
+          }, { keyEncoding: "utf8" })
+        }, delay)
+      }
+    , base
+
+  db.put({ k: 'foo' }, 'foovalue')
+  base = Date.now()
+  db.put({ k: 'bar' }, 'barvalue', { ttl: 200 })
+  verify(base, 20)
+  setTimeout(function () {
+    db.del('bar')
+  }, 50)
+  // should not exist at all by 70
+  verify(-1, 70)
+  setTimeout(t.end.bind(t), 300)
+}, { keyEncoding: 'json', valueEncoding: 'utf8' })
