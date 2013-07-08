@@ -149,6 +149,11 @@ var startTtl = function (db, checkFrequency) {
       db._ttl.put.call(db, key, value, options, callback)
     }
 
+  , ttl = function (db, key, ttl, callback) {
+      if (ttl > 0 && key !== null && key !== undefined)
+        ttlon(db, key, ttl, callback)
+    }
+
   , del = function (db, key, options, callback) {
       var done
         , _callback = callback
@@ -226,6 +231,7 @@ var startTtl = function (db, checkFrequency) {
       db[options.methodPrefix + 'put']   = put.bind(null, db)
       db[options.methodPrefix + 'del']   = del.bind(null, db)
       db[options.methodPrefix + 'batch'] = batch.bind(null, db)
+      db[options.methodPrefix + 'ttl']   = ttl.bind(null, db)
       // we must intercept close()
       db['close']                        = close.bind(null, db)
 

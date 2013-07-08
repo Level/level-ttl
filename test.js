@@ -231,6 +231,47 @@ ltest('test prolong entry life with additional put', function (db, t, createRead
   setTimeout(t.end.bind(t), 300)
 })
 
+ltest('test prolong entry life with ttl(key, ttl)', function (db, t, createReadStream) {
+  var ttlBar = function () {
+        db.ttl('bar', 40)
+        return Date.now()
+      }
+    , verify = function (base, delay) {
+        setTimeout(function () {
+          db2arr(createReadStream, t, function (err, arr) {
+            t.notOk(err, 'no error')
+            var ts = base + 37
+              , i  = 0
+            // allow +/- 3ms leeway, allow for processing speed and Node timer inaccuracy
+            for (; i < 6 && arr[3] && arr[3].value; i++) {
+              if (arr[3] && arr[3].value == String(ts))
+                break
+              ts++
+            }
+            t.deepEqual(arr, [
+                { key: 'bar', value: 'barvalue' }
+              , { key: 'foo', value: 'foovalue' }
+              , { key: 'ÿttlÿ' + ts + 'ÿbar', value: 'bar' }
+              , { key: 'ÿttlÿbar', value: String(ts) }
+            ])
+          })
+        }, delay)
+      }
+    , retest = function (delay) {
+        setTimeout(function () {
+          var base = ttlBar()
+          verify(base, 10)
+        }, delay)
+      }
+    , i
+
+  db.put('foo', 'foovalue')
+  db.put('bar', 'barvalue')
+  for (i = 0; i < 200; i += 20)
+    retest(i)
+  setTimeout(t.end.bind(t), 300)
+})
+
 ltest('test del', function (db, t, createReadStream) {
   var verify = function (base, delay) {
         setTimeout(function () {

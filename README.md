@@ -29,6 +29,13 @@ levelup('/tmp/foo.db', function (err, db) {
 
 If you put the same entry twice, you **refresh** the TTL to the *last* put operation. In this way you can build utilities like [session managers](https://github.com/rvagg/node-level-session/) for your web application where the user's session is refreshed with each visit but expires after a set period of time since their last visit.
 
+Alternatively, for a lower write-footprint you can use the `ttl()` method that is added to your LevelUP instance which can serve to insert or update a ttl for any given key in the database (even if that key doesn't exist but may in the future! Crazy!).
+
+```js
+db.put('foo', 'bar', function (err) { /* .. */ })
+db.ttl(1000 * 60 * 60, function (err) { /* .. */ })
+```
+
 **Level TTL** uses an internal scan every 10 seconds by default, this limits the available resolution of your TTL values, possibly delaying a delete for up to 10 seconds. The resolution can be tuned by passing the `'checkFrequency'` option to the `ttl()` initialiser.
 
 ```js
