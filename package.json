@@ -5,28 +5,28 @@
         "Rod Vagg <r@va.gg> (https://github.com/rvagg)"
       , "Matteo Collina <matteo.collina@gmail.com> (https://github.com/mcollina)"
     ]
-  , "version"          : "0.2.0"
+  , "version"          : "0.3.0"
   , "homepage"         : "https://github.com/rvagg/node-level-ttl"
   , "authors"          : [
         "Rod Vagg <rod@vagg.org> (https://github.com/rvagg)"
     ]
-  , "keywords"         : [ "leveldb", "levelup", "ttl" ]
+  , "keywords"         : [ "leveldb", "levelup", "ttl", "whoa dude!" ]
   , "main"             : "./level-ttl.js"
   , "repository"       : {
         "type"             : "git"
       , "url"              : "https://github.com/rvagg/node-level-ttl.git"
     }
   , "dependencies"     : {
-        "after"            : "~0.7.0"
-      , "level-sublevel"   : "~4.7.0"
-      , "xtend"            : "~2.0.3"
+        "after"            : "~0.8.1"
+      , "level-sublevel"   : "~4.7.1"
+      , "xtend"            : "~2.0.6"
     }
   , "peerDependencies" : {
     }
   , "devDependencies"  : {
         "tap"              : "*"
-      , "level"          : "*"
-      , "rimraf"           : "~2.1.4"
+      , "level"            : "*"
+      , "rimraf"           : "*"
     }
   , "scripts"          : {
         "test"             : "node ./test.js"
