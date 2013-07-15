@@ -1,9 +1,16 @@
-const test     = require('tap').test
+const test     = require('tape')
     , rimraf   = require('rimraf')
     , levelup  = require('level')
+    , sublevel = require('level-sublevel')
     , ttl      = require('./')
 
-var ltest = function (name, fn, opts) {
+function fixtape (t) {
+  t.like = function (str, reg, msg) {
+    t.ok(reg.test(str), msg)
+  }
+}
+
+function ltest (name, fn, opts) {
   test(name, function (t) {
     var location = '__ttl-' + Math.random()
       , db
@@ -15,6 +22,7 @@ var ltest = function (name, fn, opts) {
         rimraf(location, t._end.bind(t))
       })
     }
+    fixtape(t)
 
     levelup(location, opts, function (err, _db) {
       t.notOk(err, 'no error on open()')

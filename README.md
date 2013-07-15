@@ -2,15 +2,21 @@
 
 ![LevelDB Logo](https://twimg0-a.akamaihd.net/profile_images/3360574989/92fc472928b444980408147e5e5db2fa_bigger.png)
 
+[![NPM](https://nodei.co/npm/level-ttl.png?downloads)](https://nodei.co/npm/level-ttl/)
+
 **Add a `'ttl'` (time-to-live) option to LevelUP for `put()` and `batch()`**
 
 Augment LevelUP to handle a new `'ttl'` option on `put()` and `batch()` that specifies the number of milliseconds an entry should remain in the data store. After the TTL, the entry will be automatically cleared for you.
 
+Requires [LevelUP](https://github.com/rvagg/node-levelup) (or [Level](https://github.com/level/level)) and [sublevel](https://github.com/dominictarr/level-sublevel) to be installed separately.
+
 ```js
-var levelup = require('levelup')
-  , ttl     = require('level-ttl')
+var levelup  = require('level')
+  , ttl      = require('level-ttl')
+  , sublevel = require('level-sublevel')
 
 levelup('/tmp/foo.db', function (err, db) {
+  db = sublevel(db)
   db = ttl(db)
 
   // --------------------------- put() --------------------------- //

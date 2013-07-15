@@ -18,15 +18,15 @@
     }
   , "dependencies"     : {
         "after"            : "~0.8.1"
-      , "level-sublevel"   : "~4.7.1"
       , "xtend"            : "~2.0.6"
     }
   , "peerDependencies" : {
     }
   , "devDependencies"  : {
-        "tap"              : "*"
+        "tape"             : "*"
       , "level"            : "*"
       , "rimraf"           : "*"
+      , "level-sublevel"   : "*"
     }
   , "scripts"          : {
         "test"             : "node ./test.js"
