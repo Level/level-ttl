@@ -5,7 +5,7 @@
         "Rod Vagg <r@va.gg> (https://github.com/rvagg)"
       , "Matteo Collina <matteo.collina@gmail.com> (https://github.com/mcollina)"
     ]
-  , "version"          : "0.4.0"
+  , "version"          : "0.4.1"
   , "homepage"         : "https://github.com/rvagg/node-level-ttl"
   , "authors"          : [
         "Rod Vagg <rod@vagg.org> (https://github.com/rvagg)"
@@ -18,7 +18,7 @@
     }
   , "dependencies"     : {
         "after"            : "~0.8.1"
-      , "xtend"            : "~2.0.6"
+      , "xtend"            : "~2.1.1"
     }
   , "peerDependencies" : {
     }
