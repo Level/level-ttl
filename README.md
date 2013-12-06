@@ -39,7 +39,7 @@ Alternatively, for a lower write-footprint you can use the `ttl()` method that i
 
 ```js
 db.put('foo', 'bar', function (err) { /* .. */ })
-db.ttl(1000 * 60 * 60, function (err) { /* .. */ })
+db.ttl('foo', 1000 * 60 * 60, function (err) { /* .. */ })
 ```
 
 **Level TTL** uses an internal scan every 10 seconds by default, this limits the available resolution of your TTL values, possibly delaying a delete for up to 10 seconds. The resolution can be tuned by passing the `'checkFrequency'` option to the `ttl()` initialiser.
