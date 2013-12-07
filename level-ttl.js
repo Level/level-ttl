@@ -58,7 +58,7 @@ var startTtl = function (db, checkFrequency) {
       if (db._ttl._checkInProgress)
         return db._ttl._stopAfterCheck = callback
       clearInterval(db._ttl.intervalId)
-      callback()
+      callback && callback()
     }
 
   , ttlon = function ttlon (db, keys, ttl, callback) {
@@ -204,7 +204,9 @@ var startTtl = function (db, checkFrequency) {
 
   , close = function (db, callback) {
       stopTtl(db, function () {
-        db._ttl.close.call(db, callback)
+        if (db._ttl && typeof db._ttl.close == 'function')
+          return db._ttl.close.call(db, callback)
+        callback && callback()
       })
     }
 
@@ -232,8 +234,9 @@ var startTtl = function (db, checkFrequency) {
       db[options.methodPrefix + 'del']   = del.bind(null, db)
       db[options.methodPrefix + 'batch'] = batch.bind(null, db)
       db[options.methodPrefix + 'ttl']   = ttl.bind(null, db)
+      db[options.methodPrefix + 'stop']  = stopTtl.bind(null, db)
       // we must intercept close()
-      db['close']                        = close.bind(null, db)
+      db.close                           = close.bind(null, db)
 
       startTtl(db, options.checkFrequency)
 

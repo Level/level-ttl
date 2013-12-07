@@ -331,7 +331,7 @@ ltest('test del with db value encoding', function (db, t, createReadStream) {
             if (base == -1) {
               // test complete deletion
               t.deepEqual(arr, [
-                  { key: 'foo', value: "{\"v\":\"foovalue\"}" }
+                  { key: 'foo', value: '{"v":"foovalue"}' }
               ])
             } else {
               var ts = base + 197
@@ -343,13 +343,13 @@ ltest('test del with db value encoding', function (db, t, createReadStream) {
                 ts++
               }
               t.deepEqual(arr, [
-                  { key: 'bar', value: "{\"v\":\"barvalue\"}" }
-                , { key: 'foo', value: "{\"v\":\"foovalue\"}" }
+                  { key: 'bar', value: '{"v":"barvalue"}' }
+                , { key: 'foo', value: '{"v":"foovalue"}' }
                 , { key: 'ÿttlÿ' + ts + 'ÿbar', value: 'bar' }
                 , { key: 'ÿttlÿbar', value: String(ts) }
               ])
             }
-          }, { valueEncoding: "utf8" })
+          }, { valueEncoding: 'utf8' })
         }, delay)
       }
     , base
@@ -365,3 +365,56 @@ ltest('test del with db value encoding', function (db, t, createReadStream) {
   verify(-1, 70)
   setTimeout(t.end.bind(t), 300)
 }, { keyEncoding: 'utf8', valueEncoding: 'json' })
+
+test('test stop() method stops interval and doesn\'t hold process up', function (t) {
+  t.plan(8)
+
+  var location = '__ttl-' + Math.random()
+    , intervals = 0
+    , db
+    , close
+
+  global._setInterval = global.setInterval
+  global.setInterval = function () {
+    intervals++
+    return global._setInterval.apply(global, arguments)
+  }
+  global._clearInterval = global.clearInterval
+  global.clearInterval = function () {
+    intervals--
+    return global._clearInterval.apply(global, arguments)
+  }
+
+  levelup(location, function (err, _db) {
+    t.notOk(err, 'no error on open()')
+    close = _db.close.bind(_db) // unmolested close()
+
+    db = ttl(_db, { checkFrequency: 50 })
+
+    t.equals(1, intervals, '1 interval timer')
+
+    db.put( 'foo', 'bar1', { ttl: 10 })
+    setTimeout(function () {
+      db.get('foo', function (err, value) {
+        t.notOk(err, 'no error')
+        t.equal('bar1', value)
+      })
+    }, 10)
+    setTimeout(function () {
+      db.get('foo', function (err, value) {
+        t.ok(err, 'got error')
+        t.ok(err.notFound, 'not found error')
+        t.notOk(value, 'no value')
+      })
+    }, 60)
+    setTimeout(function () {
+      db.stop(function () {
+        close(function () {
+          global.setInterval = global._setInterval
+          t.equals(0, intervals, 'all interval timers cleared')
+          rimraf(location, t.end.bind(t))
+        })
+      })
+    }, 80)
+  })
+})
