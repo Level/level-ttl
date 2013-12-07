@@ -8,15 +8,13 @@
 
 Augment LevelUP to handle a new `'ttl'` option on `put()` and `batch()` that specifies the number of milliseconds an entry should remain in the data store. After the TTL, the entry will be automatically cleared for you.
 
-Requires [LevelUP](https://github.com/rvagg/node-levelup) (or [Level](https://github.com/level/level)) and [sublevel](https://github.com/dominictarr/level-sublevel) to be installed separately.
+Requires [LevelUP](https://github.com/rvagg/node-levelup) (or [Level](https://github.com/level/level)) to be installed separately.
 
 ```js
 var levelup  = require('level')
   , ttl      = require('level-ttl')
-  , sublevel = require('level-sublevel')
 
 levelup('/tmp/foo.db', function (err, db) {
-  db = sublevel(db)
   db = ttl(db)
 
   // --------------------------- put() --------------------------- //
