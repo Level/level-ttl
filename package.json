@@ -3,7 +3,8 @@
   "description": "Adds a 'ttl' option to LevelUP for puts and batches",
   "contributors": [
     "Rod Vagg <r@va.gg> (https://github.com/rvagg)",
-    "Matteo Collina <matteo.collina@gmail.com> (https://github.com/mcollina)"
+    "Matteo Collina <matteo.collina@gmail.com> (https://github.com/mcollina)",
+    "Josh Duff <me@JoshDuff.com> (https://github.com/TehShrike)"
   ],
   "version": "0.4.1",
   "homepage": "https://github.com/rvagg/node-level-ttl",
