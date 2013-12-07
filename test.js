@@ -418,3 +418,27 @@ test('test stop() method stops interval and doesn\'t hold process up', function 
     }, 80)
   })
 })
+
+test("Stopping a ttl-db based on a sublevel-db", function (t) {
+  var location = '__ttl-' + Math.random()
+
+  fixtape(t)
+
+  levelup(location, {}, function (err, levelDb) {
+    t.notOk(err, 'no error on open()')
+
+    var ttlDb = ttl(sublevel(levelDb).sublevel('my-sublevel'))
+
+    ttlDb.put('foo', 'bar', function(err) {
+      t.notOk(err, 'no error on put()')
+
+      ttlDb.get('foo', function(err, value) {
+        t.notOk(err, 'no error on get()')
+        t.equal(value, 'bar', 'same value returned')
+        levelDb.close()
+        ttlDb.stop()
+        t.end()
+      })
+    })
+  })
+})
