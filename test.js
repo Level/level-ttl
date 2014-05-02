@@ -15,11 +15,11 @@ function ltest (name, fn, opts) {
     var location = '__ttl-' + Math.random()
       , db
 
-    t._end = t.end
+    t.__end = t.end
     t.end = function () {
       db.close(function (err) {
         t.notOk(err, 'no error on close()')
-        rimraf(location, t._end.bind(t))
+        rimraf(location, t.__end.bind(t))
       })
     }
     fixtape(t)
