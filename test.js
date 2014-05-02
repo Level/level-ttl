@@ -367,7 +367,7 @@ ltest('test del with db value encoding', function (db, t, createReadStream) {
 }, { keyEncoding: 'utf8', valueEncoding: 'json' })
 
 test('test stop() method stops interval and doesn\'t hold process up', function (t) {
-  t.plan(8)
+  t.plan(9)
 
   var location = '__ttl-' + Math.random()
     , intervals = 0
@@ -412,7 +412,9 @@ test('test stop() method stops interval and doesn\'t hold process up', function 
         close(function () {
           global.setInterval = global._setInterval
           t.equals(0, intervals, 'all interval timers cleared')
-          rimraf(location, t.end.bind(t))
+          rimraf(location, function () {
+            t.ok('rimraffed')
+          })
         })
       })
     }, 80)
