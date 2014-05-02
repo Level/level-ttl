@@ -50,6 +50,8 @@ var startTtl = function (db, checkFrequency) {
             }
           })
       }, checkFrequency)
+      if (db._ttl.intervalId.unref)
+        db._ttl.intervalId.unref()
     }
 
   , stopTtl = function (db, callback) {
