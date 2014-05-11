@@ -24,14 +24,14 @@
   },
   "dependencies": {
     "after": "~0.8.1",
-    "xtend": "~2.1.1"
+    "xtend": "~2.1.1",
+    "level-sublevel": "~5.2.0"
   },
   "peerDependencies": {},
   "devDependencies": {
     "tape": "*",
     "level": "*",
-    "rimraf": "*",
-    "level-sublevel": "*"
+    "rimraf": "*"
   },
   "scripts": {
     "test": "node ./test.js"
