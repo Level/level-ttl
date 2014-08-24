@@ -1,6 +1,6 @@
-const after    = require('after')
-    , xtend    = require('xtend')
-    , sublevel = require('level-sublevel')
+const after  = require('after')
+    , xtend  = require('xtend')
+    , spaces = require('level-spaces')
 
     , DEFAULT_FREQUENCY = 10000
 
@@ -217,20 +217,22 @@ function setup (db, options) {
   if (db._ttl)
     return
 
+  // backwards compatibility
+  if (!options.namespace && options.sublevel)
+    options.namespace = options.sublevel
+
   options = xtend({
       methodPrefix   : ''
-    , sublevel       : 'ttl'
+    , namespace      : 'ttl'
     , checkFrequency : DEFAULT_FREQUENCY
   }, options)
-
-  var sdb = typeof db.sublevels == 'object' ? db : sublevel(db)
 
   db._ttl = {
       put   : db.put.bind(db)
     , del   : db.del.bind(db)
     , batch : db.batch.bind(db)
     , close : db.close.bind(db)
-    , sub   : sdb.sublevel(options.sublevel)
+    , sub   : spaces(db, options.namespace)
   }
 
   db[options.methodPrefix + 'put']   = put.bind(null, db)

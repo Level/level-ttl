@@ -1,7 +1,6 @@
 const test       = require('tape')
     , rimraf     = require('rimraf')
     , levelup    = require('level')
-    , sublevel   = require('level-sublevel')
     , listStream = require('list-stream')
     , ttl        = require('./')
 
@@ -85,8 +84,8 @@ ltest('test single ttl entry with put', function (db, t, createReadStream) {
         // allow 1ms leeway
         if (arr[3] && arr[3].value != String(ts))
           ts++
-        contains(t, arr, /!ttl!\d{13}!bar/, 'bar')
-        contains(t, arr, '!ttl!bar', /\d{13}/)
+        contains(t, arr, /\xffttl\xff\d{13}!bar/, 'bar')
+        contains(t, arr, '\xffttl\xffbar', /\d{13}/)
         contains(t, arr, 'bar', 'barvalue')
         contains(t, arr, 'foo', 'foovalue')
         setTimeout(function () {
@@ -114,18 +113,18 @@ ltest('test multiple ttl entries with put', function (db, t, createReadStream) {
             contains(t, arr, 'afoo', 'foovalue')
             if (keys >= 1) {
               contains(t, arr, 'bar1', 'barvalue1')
-              contains(t, arr, /^!ttl!\d{13}!bar1$/, 'bar1')
-              contains(t, arr, '!ttl!bar1', /^\d{13}$/)
+              contains(t, arr, /^\xffttl\xff\d{13}!bar1$/, 'bar1')
+              contains(t, arr, '\xffttl\xffbar1', /^\d{13}$/)
             }
             if (keys >= 2) {
               contains(t, arr, 'bar2', 'barvalue2')
-              contains(t, arr, /^!ttl!\d{13}!bar2$/, 'bar2')
-              contains(t, arr, '!ttl!bar2', /^\d{13}$/)
+              contains(t, arr, /^\xffttl\xff\d{13}!bar2$/, 'bar2')
+              contains(t, arr, '\xffttl\xffbar2', /^\d{13}$/)
             }
             if (keys >= 3) {
               contains(t, arr, 'bar3', 'barvalue3')
-              contains(t, arr, /^!ttl!\d{13}!bar3$/, 'bar3')
-              contains(t, arr, '!ttl!bar3', /^\d{13}$/)
+              contains(t, arr, /^\xffttl\xff\d{13}!bar3$/, 'bar3')
+              contains(t, arr, '\xffttl\xffbar3', /^\d{13}$/)
             }
           })
         }, delay)
@@ -154,23 +153,23 @@ ltest('test multiple ttl entries with batch-put', function (db, t, createReadStr
             contains(t, arr, 'afoo', 'foovalue')
             if (keys >= 1) {
               contains(t, arr, 'bar1', 'barvalue1')
-              contains(t, arr, /^!ttl!\d{13}!bar1$/, 'bar1')
-              contains(t, arr, '!ttl!bar1', /^\d{13}$/)
+              contains(t, arr, /^\xffttl\xff\d{13}!bar1$/, 'bar1')
+              contains(t, arr, '\xffttl\xffbar1', /^\d{13}$/)
             }
             if (keys >= 2) {
               contains(t, arr, 'bar2', 'barvalue2')
-              contains(t, arr, /^!ttl!\d{13}!bar2$/, 'bar2')
-              contains(t, arr, '!ttl!bar2', /^\d{13}$/)
+              contains(t, arr, /^\xffttl\xff\d{13}!bar2$/, 'bar2')
+              contains(t, arr, '\xffttl\xffbar2', /^\d{13}$/)
             }
             if (keys >= 3) {
               contains(t, arr, 'bar3', 'barvalue3')
-              contains(t, arr, /^!ttl!\d{13}!bar3$/, 'bar3')
-              contains(t, arr, '!ttl!bar3', /^\d{13}$/)
+              contains(t, arr, /^\xffttl\xff\d{13}!bar3$/, 'bar3')
+              contains(t, arr, '\xffttl\xffbar3', /^\d{13}$/)
             }
             if (keys >= 3) {
               contains(t, arr, 'bar4', 'barvalue4')
-              contains(t, arr, /^!ttl!\d{13}!bar4$/, 'bar4')
-              contains(t, arr, '!ttl!bar4', /^\d{13}$/)
+              contains(t, arr, /^\xffttl\xff\d{13}!bar4$/, 'bar4')
+              contains(t, arr, '\xffttl\xffbar4', /^\d{13}$/)
             }
           })
         }, delay)
@@ -211,8 +210,8 @@ ltest('test prolong entry life with additional put', function (db, t, createRead
             }
             contains(t, arr, 'bar', 'barvalue')
             contains(t, arr, 'foo', 'foovalue')
-            contains(t, arr, /!ttl!\d{13}!bar/, 'bar')
-            contains(t, arr, '!ttl!bar', /\d{13}/)
+            contains(t, arr, /\xffttl\xff\d{13}!bar/, 'bar')
+            contains(t, arr, '\xffttl\xffbar', /\d{13}/)
           })
         }, delay)
       }
@@ -250,8 +249,8 @@ ltest('test prolong entry life with ttl(key, ttl)', function (db, t, createReadS
             }
             contains(t, arr, 'bar', 'barvalue')
             contains(t, arr, 'foo', 'foovalue')
-            contains(t, arr, /!ttl!\d{13}!bar/, 'bar')
-            contains(t, arr, '!ttl!bar', /\d{13}/)
+            contains(t, arr, /\xffttl\xff\d{13}!bar/, 'bar')
+            contains(t, arr, '\xffttl\xffbar', /\d{13}/)
           })
         }, delay)
       }
@@ -291,8 +290,8 @@ ltest('test del', function (db, t, createReadStream) {
               }
               contains(t, arr, 'bar', 'barvalue')
               contains(t, arr, 'foo', 'foovalue')
-              contains(t, arr, /!ttl!\d{13}!bar/, 'bar')
-              contains(t, arr, '!ttl!bar', /\d{13}/)
+              contains(t, arr, /\xffttl\xff\d{13}!bar/, 'bar')
+              contains(t, arr, '\xffttl\xffbar', /\d{13}/)
             }
           })
         }, delay)
@@ -332,8 +331,8 @@ ltest('test del with db value encoding', function (db, t, createReadStream) {
               }
               contains(t, arr, 'bar', '{"v":"barvalue"}')
               contains(t, arr, 'foo', '{"v":"foovalue"}')
-              contains(t, arr, /!ttl!\d{13}!bar/, 'bar')
-              contains(t, arr, '!ttl!bar', /\d{13}/)
+              contains(t, arr, /\xffttl\xff\d{13}!bar/, 'bar')
+              contains(t, arr, '\xffttl\xffbar', /\d{13}/)
             }
           }, { valueEncoding: 'utf8' })
         }, delay)
@@ -404,30 +403,5 @@ test('test stop() method stops interval and doesn\'t hold process up', function 
         })
       })
     }, 80)
-  })
-})
-
-
-test('Stopping a ttl-db based on a sublevel-db', function (t) {
-  var location = '__ttl-' + Math.random()
-
-  fixtape(t)
-
-  levelup(location, {}, function (err, levelDb) {
-    t.notOk(err, 'no error on open()')
-
-    var ttlDb = ttl(sublevel(levelDb).sublevel('my-sublevel'))
-
-    ttlDb.put('foo', 'bar', function(err) {
-      t.notOk(err, 'no error on put()')
-
-      ttlDb.get('foo', function(err, value) {
-        t.notOk(err, 'no error on get()')
-        t.equal(value, 'bar', 'same value returned')
-        levelDb.close()
-        ttlDb.stop()
-        t.end()
-      })
-    })
   })
 })

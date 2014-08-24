@@ -14,6 +14,7 @@
   "keywords": [
     "leveldb",
     "levelup",
+    "level",
     "ttl",
     "whoa dude!"
   ],
@@ -24,9 +25,9 @@
   },
   "dependencies": {
     "after": ">=0.8.1 <0.9.0-0",
-    "level-sublevel": ">=5.2.0 <5.3.0-0",
+    "level-spaces": ">=1.0.1 <1.1.0-0",
     "list-stream": ">=1.0.0 <1.1.0-0",
-    "xtend": ">=2.1.1 <2.2.0-0"
+    "xtend": ">=4.0.0 <4.1.0-0"
   },
   "peerDependencies": {},
   "devDependencies": {
