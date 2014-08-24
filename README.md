@@ -1,4 +1,4 @@
-# Level TTL [![Build Status](https://secure.travis-ci.org/rvagg/node-level-ttl.png)](http://travis-ci.org/rvagg/node-level-ttl)
+# Level TTL
 
 ![LevelDB Logo](https://twimg0-a.akamaihd.net/profile_images/3360574989/92fc472928b444980408147e5e5db2fa_bigger.png)
 
