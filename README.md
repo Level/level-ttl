@@ -2,7 +2,8 @@
 
 ![LevelDB Logo](https://twimg0-a.akamaihd.net/profile_images/3360574989/92fc472928b444980408147e5e5db2fa_bigger.png)
 
-[![NPM](https://nodei.co/npm/level-ttl.png?downloads)](https://nodei.co/npm/level-ttl/)
+[![NPM](https://nodei.co/npm/level-ttl.png?downloads=true&downloadRank=true)](https://nodei.co/npm/level-ttl/)
+[![NPM](https://nodei.co/npm-dl/level-ttl.png?months=6&height=3)](https://nodei.co/npm/level-ttl/)
 
 **Add a `'ttl'` (time-to-live) option to LevelUP for `put()` and `batch()`**
 
