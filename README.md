@@ -17,7 +17,7 @@ Requires [LevelUP](https://github.com/rvagg/node-levelup) (or [Level](https://gi
 var levelup  = require('level')
   , ttl      = require('level-ttl')
 
-var db = levelu('/tmp/foo.db')
+var db = levelup('/tmp/foo.db')
 db = ttl(db)
 
 // --------------------------- put() --------------------------- //
