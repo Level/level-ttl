@@ -217,6 +217,8 @@ function setup (db, options) {
   if (db._ttl)
     return
 
+  options = options || {}
+
   // backwards compatibility
   if (!options.namespace && options.sublevel)
     options.namespace = options.sublevel

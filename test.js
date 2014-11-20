@@ -405,3 +405,28 @@ test('test stop() method stops interval and doesn\'t hold process up', function 
     }, 80)
   })
 })
+
+test('without options', function (t) {
+  var location = '__ttl-' + Math.random()
+    , db
+
+  t.__end = t.end
+  t.end = function () {
+    db.close(function (err) {
+      t.notOk(err, 'no error on close()')
+      rimraf(location, t.__end.bind(t))
+    })
+  }
+
+  levelup(location, function (err, _db) {
+    t.notOk(err, 'no error on open()')
+
+    var createReadStream = _db.createReadStream.bind(_db)
+    try {
+      db = ttl(_db)
+    } catch(err) {
+      t.notOk(err, 'no error on ttl()')
+    }
+    t.end()
+  })
+})
