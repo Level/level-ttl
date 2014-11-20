@@ -126,6 +126,7 @@ function ttloff (db, keys, callback) {
       , { keyEncoding: 'utf8', valueEncoding: 'utf8' }
       , function (err, exp) {
           if (!err && exp > 0) {
+            db.emit('ttl', key);
             batch.push({ type: 'del', key: key })
             batch.push({ type: 'del', key: exp + '!' + key })
           }
