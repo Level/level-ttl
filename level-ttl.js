@@ -234,7 +234,7 @@ function setup (db, options) {
     , del   : db.del.bind(db)
     , batch : db.batch.bind(db)
     , close : db.close.bind(db)
-    , sub   : spaces(db, options.namespace)
+    , sub   : options.sub || spaces(db, options.namespace)
   }
 
   db[options.methodPrefix + 'put']   = put.bind(null, db)
