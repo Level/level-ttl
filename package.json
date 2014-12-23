@@ -6,7 +6,7 @@
     "Matteo Collina <matteo.collina@gmail.com> (https://github.com/mcollina)",
     "Josh Duff <me@JoshDuff.com> (https://github.com/TehShrike)"
   ],
-  "version": "2.1.1",
+  "version": "2.2.0",
   "homepage": "https://github.com/rvagg/node-level-ttl",
   "authors": [
     "Rod Vagg <rod@vagg.org> (https://github.com/rvagg)"
