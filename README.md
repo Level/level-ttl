@@ -54,6 +54,38 @@ db = ttl(db, { checkFrequency: 1000 })
 
 Of course, a scan takes some resources, particularly on a data store that makes heavy use of TTLs. If you don't require high accuracy for actual deletions then you can increase the `'checkFrequency'`. Note though that a scan only involves invoking a LevelUP ReadStream that returns *only the entries due to expire*, so it doesn't have to manually check through all entries with a TTL. As usual, it's best to not do too much tuning until you have you have something worth tuning!
 
+You can also specify a defaultTTL that will be applied to all keys. By default it is disabled. You can tune it by passing `'defaultTTL'` option to the `ttl()` initializer. 
+
+```js
+var db = level('/tmp/foo.db')
+// Expire all by default at 1 hour
+db = ttl(db, { defaultTTL: 60 * 60 * 1000 })
+
+/* .. */
+```
+
+If you specify a TTL on a `put` or a `batch` that will be used instead of the defaultTTL.
+
+```js
+var db = level('/tmp/foo.db')
+// Expire all by default at 1 hour
+db = ttl(db, { defaultTTL: 60 * 60 * 1000 })
+
+// 30 Second Timeout Used instead of the defaulTTL of 1 hour
+db.put('foo', 'bar', { ttl: 30 * 1000 }, function(err) {})
+```
+
+If you want to disable the defaultTTL you simply pass a zero (0) when performing the `put` or `batch`
+
+```js
+var db = level('/tmp/foo.db')
+// Expire all by default at 1 hour
+db = ttl(db, { defaultTTL: 60 * 60 * 1000 })
+
+// This entry will not get get a TTL.
+db.put('foo', 'bar', { ttl: 0 }, function(err) {})
+```
+
 ### Shutting down
 
 **Level TTL** uses a timer to regularly check for expiring entries (don't worry, the whole data store isn't scanned, it's very efficient!). The `db.close()` method is automatically wired to stop the timer but there is also a more explicit <b><code>db.stop()</code></b> method that will stop the timer and not pass on to a `close()` underlying LevelUP instance.
