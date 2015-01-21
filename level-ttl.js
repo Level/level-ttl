@@ -145,7 +145,7 @@ function put (db, key, value, options, callback) {
 
   options = options || {};
 
-  if (default_ttl > 0 && (!options.ttl || options.ttl != 0)) {
+  if (default_ttl > 0 && !options.ttl && options.ttl != 0) {
     options.ttl = default_ttl;
   }
 
@@ -191,7 +191,7 @@ function batch (db, arr, options, callback) {
 
   options = options || {}
 
-  if (default_ttl > 0 && (!options.ttl || options.ttl != 0)) {
+  if (default_ttl > 0 && !options.ttl && options.ttl != 0) {
     options.ttl = default_ttl;
   }
 
