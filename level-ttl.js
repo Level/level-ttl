@@ -138,6 +138,11 @@ function ttloff (db, keys, callback) {
 
 function put (db, key, value, options, callback) {
 
+  if (typeof options == 'function') {
+    callback = options;
+    options = {};
+  }
+
   options = options || {};
 
   if (default_ttl > 0 && (!options.ttl || options.ttl != 0)) {
@@ -178,6 +183,11 @@ function del (db, key, options, callback) {
 }
 
 function batch (db, arr, options, callback) {
+
+  if (typeof options == 'function') {
+    callback = options;
+    options = {};
+  }
 
   options = options || {}
 
