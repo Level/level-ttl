@@ -4,6 +4,7 @@ const after  = require('after')
 
     , DEFAULT_FREQUENCY = 10000
 
+var default_ttl = 0;
 
 function startTtl (db, checkFrequency) {
   db._ttl.intervalId = setInterval(function () {
@@ -136,6 +137,22 @@ function ttloff (db, keys, callback) {
 }
 
 function put (db, key, value, options, callback) {
+
+  if (typeof options == 'function') {
+    callback = options;
+    options = {};
+  }
+
+  options = options || {};
+
+  /*if ((typeof options.ttl == 'undefined' && default_ttl > 0)
+      || (typeof options.ttl != 'undefined' && options.ttl != 0 && default_ttl > 0)) {
+    options.ttl = default_ttl;
+  }*/
+  if (default_ttl > 0 && (!options.ttl || options.ttl != 0)) {
+    options.ttl = default_ttl;
+  }
+
   var ttl
     , done
     , _callback = callback
@@ -170,6 +187,16 @@ function del (db, key, options, callback) {
 }
 
 function batch (db, arr, options, callback) {
+
+  if (typeof options == 'function') {
+    callback = options;
+    options = {};
+  }
+
+  if (default_ttl > 0 && (!options.ttl || options.ttl != 0)) {
+    options.ttl = default_ttl;
+  }
+
   var ttl
     , done
     , on
@@ -183,7 +210,7 @@ function batch (db, arr, options, callback) {
     on  = []
     off = []
     arr.forEach(function (entry) {
-      if (!entry || entry.key === null || entry.key === undefined)
+      if (!entry || entry.key === null || entry.key === undefined || entry.key.indexOf('\xffttl\xff') > -1)
         return
 
       if (entry.type == 'put' && entry.value !== null && entry.value !== undefined)
@@ -227,7 +254,10 @@ function setup (db, options) {
       methodPrefix   : ''
     , namespace      : 'ttl'
     , checkFrequency : DEFAULT_FREQUENCY
+    , defaultTTL     : 0
   }, options)
+
+  default_ttl = options.defaultTTL;
 
   db._ttl = {
       put   : db.put.bind(db)

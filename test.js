@@ -406,6 +406,35 @@ test('test stop() method stops interval and doesn\'t hold process up', function 
   })
 })
 
+test('with default ttl option', function (t) {
+  t.plan(6);
+
+  var location = '__ttl-' + Math.random()
+    , db
+
+  levelup(location, function (err, _db) {
+    t.notOk(err, 'no error on open()')
+    close = _db.close.bind(_db) // unmolested close()
+
+    db = ttl(_db, { checkFrequency: 50, defaultTTL: 10 })
+    
+    db.put( 'foo', 'bar1')
+    setTimeout(function () {
+      db.get('foo', function (err, value) {
+        t.notOk(err, 'no error')
+        t.equal('bar1', value)
+      })
+    }, 10)
+    setTimeout(function () {
+      db.get('foo', function (err, value) {
+        t.ok(err, 'got error')
+        t.ok(err.notFound, 'not found error')
+        t.notOk(value, 'no value')
+      })
+    }, 60)
+  });
+})
+
 test('without options', function (t) {
   var location = '__ttl-' + Math.random()
     , db
