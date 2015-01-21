@@ -136,9 +136,9 @@ ltest('test multiple ttl entries with put', function (db, t, createReadStream) {
   db.put('bar3', 'barvalue3', { ttl: 60 })
 
   expect(20, 3)
-  expect(110, 2)
-  expect(160, 1)
-  expect(210, 0)
+  expect(140, 2)
+  expect(190, 1)
+  expect(230, 0)
 
   setTimeout(t.end.bind(t), 275)
 })
@@ -193,7 +193,7 @@ ltest('test multiple ttl entries with batch-put', function (db, t, createReadStr
 
 ltest('test prolong entry life with additional put', function (db, t, createReadStream) {
   var putBar = function () {
-        db.put('bar', 'barvalue', { ttl: 40 })
+        db.put('bar', 'barvalue', { ttl: 100 })
         return Date.now()
       }
     , verify = function (base, delay) {
@@ -218,7 +218,7 @@ ltest('test prolong entry life with additional put', function (db, t, createRead
     , retest = function (delay) {
         setTimeout(function () {
           var base = putBar()
-          verify(base, 10)
+          verify(base, 50)
         }, delay)
       }
     , i
@@ -232,7 +232,7 @@ ltest('test prolong entry life with additional put', function (db, t, createRead
 
 ltest('test prolong entry life with ttl(key, ttl)', function (db, t, createReadStream) {
   var ttlBar = function () {
-        db.ttl('bar', 40)
+        db.ttl('bar', 100)
         return Date.now()
       }
     , verify = function (base, delay) {
@@ -257,7 +257,7 @@ ltest('test prolong entry life with ttl(key, ttl)', function (db, t, createReadS
     , retest = function (delay) {
         setTimeout(function () {
           var base = ttlBar()
-          verify(base, 10)
+          verify(base, 50)
         }, delay)
       }
     , i
