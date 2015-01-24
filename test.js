@@ -136,9 +136,9 @@ ltest('test multiple ttl entries with put', function (db, t, createReadStream) {
   db.put('bar3', 'barvalue3', { ttl: 60 })
 
   expect(20, 3)
-  expect(110, 2)
-  expect(160, 1)
-  expect(210, 0)
+  expect(140, 2)
+  expect(190, 1)
+  expect(230, 0)
 
   setTimeout(t.end.bind(t), 275)
 })
@@ -193,7 +193,7 @@ ltest('test multiple ttl entries with batch-put', function (db, t, createReadStr
 
 ltest('test prolong entry life with additional put', function (db, t, createReadStream) {
   var putBar = function () {
-        db.put('bar', 'barvalue', { ttl: 40 })
+        db.put('bar', 'barvalue', { ttl: 150 })
         return Date.now()
       }
     , verify = function (base, delay) {
@@ -218,7 +218,7 @@ ltest('test prolong entry life with additional put', function (db, t, createRead
     , retest = function (delay) {
         setTimeout(function () {
           var base = putBar()
-          verify(base, 10)
+          verify(base, 75)
         }, delay)
       }
     , i
@@ -226,13 +226,13 @@ ltest('test prolong entry life with additional put', function (db, t, createRead
   db.put('foo', 'foovalue')
   for (i = 0; i < 200; i += 20)
     retest(i)
-  setTimeout(t.end.bind(t), 300)
+  setTimeout(t.end.bind(t), 500)
 })
 
 
 ltest('test prolong entry life with ttl(key, ttl)', function (db, t, createReadStream) {
   var ttlBar = function () {
-        db.ttl('bar', 40)
+        db.ttl('bar', 150)
         return Date.now()
       }
     , verify = function (base, delay) {
@@ -257,7 +257,7 @@ ltest('test prolong entry life with ttl(key, ttl)', function (db, t, createReadS
     , retest = function (delay) {
         setTimeout(function () {
           var base = ttlBar()
-          verify(base, 10)
+          verify(base, 75)
         }, delay)
       }
     , i
@@ -266,7 +266,7 @@ ltest('test prolong entry life with ttl(key, ttl)', function (db, t, createReadS
   db.put('bar', 'barvalue')
   for (i = 0; i < 200; i += 20)
     retest(i)
-  setTimeout(t.end.bind(t), 300)
+  setTimeout(t.end.bind(t), 500)
 })
 
 ltest('test del', function (db, t, createReadStream) {
@@ -404,6 +404,35 @@ test('test stop() method stops interval and doesn\'t hold process up', function 
       })
     }, 80)
   })
+})
+
+test('with default ttl option', function (t) {
+  t.plan(6);
+
+  var location = '__ttl-' + Math.random()
+    , db
+
+  levelup(location, function (err, _db) {
+    t.notOk(err, 'no error on open()')
+    close = _db.close.bind(_db) // unmolested close()
+
+    db = ttl(_db, { checkFrequency: 50, defaultTTL: 10 })
+    
+    db.put( 'foo', 'bar1')
+    setTimeout(function () {
+      db.get('foo', function (err, value) {
+        t.notOk(err, 'no error')
+        t.equal('bar1', value)
+      })
+    }, 10)
+    setTimeout(function () {
+      db.get('foo', function (err, value) {
+        t.ok(err, 'got error')
+        t.ok(err.notFound, 'not found error')
+        t.notOk(value, 'no value')
+      })
+    }, 60)
+  });
 })
 
 test('without options', function (t) {
