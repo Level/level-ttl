@@ -1,38 +1,33 @@
 const after  = require('after')
     , xtend  = require('xtend')
-    , spaces = require('level-spaces')
 
     , DEFAULT_FREQUENCY = 10000
 
+function prefixKey (db, key) {
+  var opts = db._ttl.options
+  return opts.separator + opts.namespace + opts.separator + key
+}
 
 function startTtl (db, checkFrequency) {
   db._ttl.intervalId = setInterval(function () {
     var batch    = []
-      , subBatch = []
       , query = {
             keyEncoding: 'utf8'
           , valueEncoding: 'utf8'
-          , end: String(Date.now())
+          , start: prefixKey(db, '!x!')
+          , end: prefixKey(db, '!x!' + String(Date.now()) + '~')
         }
 
     db._ttl._checkInProgress = true
-    db._ttl.sub.createReadStream(query)
+    db.createReadStream(query)
       .on('data', function (data) {
-        subBatch.push({ type: 'del', key: data.value })
-        subBatch.push({ type: 'del', key: data.key })
+        batch.push({ type: 'del', key: prefixKey(db, data.value) })
+        batch.push({ type: 'del', key: data.key })
         batch.push({ type: 'del', key: data.value })
       })
       .on('error', db.emit.bind(db, 'error'))
       .on('end', function () {
         if (batch.length) {
-          db._ttl.sub.batch(
-              subBatch
-            , { keyEncoding: 'utf8' }
-            , function (err) {
-                if (err)
-                  db.emit('error', err)
-              }
-          )
           db._ttl.batch(
               batch
             , { keyEncoding: 'utf8' }
@@ -75,14 +70,14 @@ function ttlon (db, keys, ttl, callback) {
     keys.forEach(function (key) {
       if (typeof key != 'string')
         key = key.toString()
-      batch.push({ type: 'put', key: key               , value: exp })
-      batch.push({ type: 'put', key: exp + '!' + key, value: key })
+      batch.push({ type: 'put', key: prefixKey(db, key), value: exp })
+      batch.push({ type: 'put', key: prefixKey(db, '!x!' + exp + '!' + key), value: key })
     })
 
     if (!batch.length)
       return callback && callback()
 
-    db._ttl.sub.batch(
+    db._ttl.batch(
         batch
       , { keyEncoding: 'utf8', valueEncoding: 'utf8' }
       , function (err) {
@@ -106,7 +101,7 @@ function ttloff (db, keys, callback) {
         if (!batch.length)
           return callback && callback()
 
-        db._ttl.sub.batch(
+        db._ttl.batch(
             batch
           , { keyEncoding: 'utf8', valueEncoding: 'utf8' }
           , function (err) {
@@ -121,13 +116,13 @@ function ttloff (db, keys, callback) {
     if (typeof key != 'string')
       key = key.toString()
 
-    db._ttl.sub.get(
+    db.get(
         key
       , { keyEncoding: 'utf8', valueEncoding: 'utf8' }
       , function (err, exp) {
           if (!err && exp > 0) {
-            batch.push({ type: 'del', key: key })
-            batch.push({ type: 'del', key: exp + '!' + key })
+            batch.push({ type: 'del', key: prefixKey(db, key) })
+            batch.push({ type: 'del', key: prefixKey(db, exp + '!' + key) })
           }
           done(err && err.name != 'NotFoundError' && err)
         }
@@ -136,11 +131,21 @@ function ttloff (db, keys, callback) {
 }
 
 function put (db, key, value, options, callback) {
-  var ttl
-    , done
+  if (typeof options == 'function') {
+    callback = options
+    options = {}
+  }
+
+  options = options || {}
+
+  if (db._ttl.options.defaultTTL > 0 && !options.ttl && options.ttl != 0) {
+    options.ttl = db._ttl.options.defaultTTL
+  }
+
+  var done
     , _callback = callback
 
-  if (typeof options == 'object' && (ttl = options.ttl) > 0
+  if (options.ttl > 0
       && key !== null && key !== undefined
       && value !== null && value !== undefined) {
 
@@ -170,13 +175,23 @@ function del (db, key, options, callback) {
 }
 
 function batch (db, arr, options, callback) {
-  var ttl
-    , done
+  if (typeof options == 'function') {
+    callback = options
+    options = {}
+  }
+
+  options = options || {}
+
+  if (db._ttl.options.defaultTTL > 0 && !options.ttl && options.ttl != 0) {
+    options.ttl = db._ttl.options.defaultTTL
+  }
+
+  var done
     , on
     , off
     , _callback = callback
 
-  if (typeof options == 'object' && (ttl = options.ttl) > 0 && Array.isArray(arr)) {
+  if (options.ttl > 0 && Array.isArray(arr)) {
     done = after(3, _callback || function () {})
     callback = done
 
@@ -226,15 +241,17 @@ function setup (db, options) {
   options = xtend({
       methodPrefix   : ''
     , namespace      : 'ttl'
+    , separator      : '\xff'
     , checkFrequency : DEFAULT_FREQUENCY
+    , defaultTTL     : 0
   }, options)
 
   db._ttl = {
-      put   : db.put.bind(db)
-    , del   : db.del.bind(db)
-    , batch : db.batch.bind(db)
-    , close : db.close.bind(db)
-    , sub   : options.sub || spaces(db, options.namespace)
+      put     : db.put.bind(db)
+    , del     : db.del.bind(db)
+    , batch   : db.batch.bind(db)
+    , close   : db.close.bind(db)
+    , options : options
   }
 
   db[options.methodPrefix + 'put']   = put.bind(null, db)
