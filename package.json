@@ -4,7 +4,8 @@
   "contributors": [
     "Rod Vagg <r@va.gg> (https://github.com/rvagg)",
     "Matteo Collina <matteo.collina@gmail.com> (https://github.com/mcollina)",
-    "Josh Duff <me@JoshDuff.com> (https://github.com/TehShrike)"
+    "Josh Duff <me@JoshDuff.com> (https://github.com/TehShrike)",
+    "Erik Kristensen <erik@erikkristensen.com> (https://github.com/ekristen)"
   ],
   "version": "2.2.0",
   "homepage": "https://github.com/rvagg/node-level-ttl",
@@ -25,7 +26,6 @@
   },
   "dependencies": {
     "after": ">=0.8.1 <0.9.0-0",
-    "level-spaces": ">=1.1.1 <1.2.0-0",
     "list-stream": ">=1.0.0 <1.1.0-0",
     "xtend": ">=4.0.0 <4.1.0-0"
   },

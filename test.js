@@ -3,6 +3,7 @@ const test       = require('tape')
     , levelup    = require('level')
     , listStream = require('list-stream')
     , ttl        = require('./')
+    , xtend      = require('xtend')
 
 
 function fixtape (t) {
@@ -12,7 +13,7 @@ function fixtape (t) {
 }
 
 
-function ltest (name, fn, opts) {
+function ltest (name, fn, opts, ttl_opts) {
   test(name, function (t) {
     var location = '__ttl-' + Math.random()
       , db
@@ -30,7 +31,7 @@ function ltest (name, fn, opts) {
       t.notOk(err, 'no error on open()')
 
       var createReadStream = _db.createReadStream.bind(_db)
-      db = ttl(_db, { checkFrequency: 50 })
+      db = ttl(_db, xtend({ checkFrequency: 50 }, ttl_opts))
 
       fn(db, t, createReadStream)
     })
@@ -72,6 +73,7 @@ false && ltest('test single ttl entry', function (db, t) {
   t.end()
 })
 
+
 ltest('test single ttl entry with put', function (db, t, createReadStream) {
   db.put('foo', 'foovalue', function (err) {
     t.notOk(err, 'no error')
@@ -84,7 +86,7 @@ ltest('test single ttl entry with put', function (db, t, createReadStream) {
         // allow 1ms leeway
         if (arr[3] && arr[3].value != String(ts))
           ts++
-        contains(t, arr, /\xffttl\xff\d{13}!bar/, 'bar')
+        contains(t, arr, /\xffttl\xff!x!\d{13}!bar/, 'bar')
         contains(t, arr, '\xffttl\xffbar', /\d{13}/)
         contains(t, arr, 'bar', 'barvalue')
         contains(t, arr, 'foo', 'foovalue')
@@ -113,17 +115,17 @@ ltest('test multiple ttl entries with put', function (db, t, createReadStream) {
             contains(t, arr, 'afoo', 'foovalue')
             if (keys >= 1) {
               contains(t, arr, 'bar1', 'barvalue1')
-              contains(t, arr, /^\xffttl\xff\d{13}!bar1$/, 'bar1')
+              contains(t, arr, /^\xffttl\xff!x!\d{13}!bar1$/, 'bar1')
               contains(t, arr, '\xffttl\xffbar1', /^\d{13}$/)
             }
             if (keys >= 2) {
               contains(t, arr, 'bar2', 'barvalue2')
-              contains(t, arr, /^\xffttl\xff\d{13}!bar2$/, 'bar2')
+              contains(t, arr, /^\xffttl\xff!x!\d{13}!bar2$/, 'bar2')
               contains(t, arr, '\xffttl\xffbar2', /^\d{13}$/)
             }
             if (keys >= 3) {
               contains(t, arr, 'bar3', 'barvalue3')
-              contains(t, arr, /^\xffttl\xff\d{13}!bar3$/, 'bar3')
+              contains(t, arr, /^\xffttl\xff!x!\d{13}!bar3$/, 'bar3')
               contains(t, arr, '\xffttl\xffbar3', /^\d{13}$/)
             }
           })
@@ -131,16 +133,16 @@ ltest('test multiple ttl entries with put', function (db, t, createReadStream) {
       }
 
   db.put('afoo', 'foovalue')
-  db.put('bar1', 'barvalue1', { ttl: 180 })
-  db.put('bar2', 'barvalue2', { ttl: 120 })
-  db.put('bar3', 'barvalue3', { ttl: 60 })
+  db.put('bar1', 'barvalue1', { ttl: 400 })
+  db.put('bar2', 'barvalue2', { ttl: 250 })
+  db.put('bar3', 'barvalue3', { ttl: 100 })
 
-  expect(20, 3)
-  expect(110, 2)
-  expect(160, 1)
-  expect(210, 0)
+  expect(25, 3)
+  expect(150, 2)
+  expect(300, 1)
+  expect(450, 0)
 
-  setTimeout(t.end.bind(t), 275)
+  setTimeout(t.end.bind(t), 600)
 })
 
 
@@ -153,22 +155,22 @@ ltest('test multiple ttl entries with batch-put', function (db, t, createReadStr
             contains(t, arr, 'afoo', 'foovalue')
             if (keys >= 1) {
               contains(t, arr, 'bar1', 'barvalue1')
-              contains(t, arr, /^\xffttl\xff\d{13}!bar1$/, 'bar1')
+              contains(t, arr, /^\xffttl\xff!x!\d{13}!bar1$/, 'bar1')
               contains(t, arr, '\xffttl\xffbar1', /^\d{13}$/)
             }
             if (keys >= 2) {
               contains(t, arr, 'bar2', 'barvalue2')
-              contains(t, arr, /^\xffttl\xff\d{13}!bar2$/, 'bar2')
+              contains(t, arr, /^\xffttl\xff!x!\d{13}!bar2$/, 'bar2')
               contains(t, arr, '\xffttl\xffbar2', /^\d{13}$/)
             }
             if (keys >= 3) {
               contains(t, arr, 'bar3', 'barvalue3')
-              contains(t, arr, /^\xffttl\xff\d{13}!bar3$/, 'bar3')
+              contains(t, arr, /^\xffttl\xff!x!\d{13}!bar3$/, 'bar3')
               contains(t, arr, '\xffttl\xffbar3', /^\d{13}$/)
             }
             if (keys >= 3) {
               contains(t, arr, 'bar4', 'barvalue4')
-              contains(t, arr, /^\xffttl\xff\d{13}!bar4$/, 'bar4')
+              contains(t, arr, /^\xffttl\xff!x!\d{13}!bar4$/, 'bar4')
               contains(t, arr, '\xffttl\xffbar4', /^\d{13}$/)
             }
           })
@@ -193,7 +195,7 @@ ltest('test multiple ttl entries with batch-put', function (db, t, createReadStr
 
 ltest('test prolong entry life with additional put', function (db, t, createReadStream) {
   var putBar = function () {
-        db.put('bar', 'barvalue', { ttl: 40 })
+        db.put('bar', 'barvalue', { ttl: 250 })
         return Date.now()
       }
     , verify = function (base, delay) {
@@ -210,7 +212,7 @@ ltest('test prolong entry life with additional put', function (db, t, createRead
             }
             contains(t, arr, 'bar', 'barvalue')
             contains(t, arr, 'foo', 'foovalue')
-            contains(t, arr, /\xffttl\xff\d{13}!bar/, 'bar')
+            contains(t, arr, /\xffttl\xff!x!\d{13}!bar/, 'bar')
             contains(t, arr, '\xffttl\xffbar', /\d{13}/)
           })
         }, delay)
@@ -218,7 +220,7 @@ ltest('test prolong entry life with additional put', function (db, t, createRead
     , retest = function (delay) {
         setTimeout(function () {
           var base = putBar()
-          verify(base, 10)
+          verify(base, 50)
         }, delay)
       }
     , i
@@ -232,7 +234,7 @@ ltest('test prolong entry life with additional put', function (db, t, createRead
 
 ltest('test prolong entry life with ttl(key, ttl)', function (db, t, createReadStream) {
   var ttlBar = function () {
-        db.ttl('bar', 40)
+        db.ttl('bar', 250)
         return Date.now()
       }
     , verify = function (base, delay) {
@@ -249,7 +251,7 @@ ltest('test prolong entry life with ttl(key, ttl)', function (db, t, createReadS
             }
             contains(t, arr, 'bar', 'barvalue')
             contains(t, arr, 'foo', 'foovalue')
-            contains(t, arr, /\xffttl\xff\d{13}!bar/, 'bar')
+            contains(t, arr, /\xffttl\xff!x!\d{13}!bar/, 'bar')
             contains(t, arr, '\xffttl\xffbar', /\d{13}/)
           })
         }, delay)
@@ -257,7 +259,7 @@ ltest('test prolong entry life with ttl(key, ttl)', function (db, t, createReadS
     , retest = function (delay) {
         setTimeout(function () {
           var base = ttlBar()
-          verify(base, 10)
+          verify(base, 25)
         }, delay)
       }
     , i
@@ -268,6 +270,7 @@ ltest('test prolong entry life with ttl(key, ttl)', function (db, t, createReadS
     retest(i)
   setTimeout(t.end.bind(t), 300)
 })
+
 
 ltest('test del', function (db, t, createReadStream) {
   var verify = function (base, delay) {
@@ -290,7 +293,7 @@ ltest('test del', function (db, t, createReadStream) {
               }
               contains(t, arr, 'bar', 'barvalue')
               contains(t, arr, 'foo', 'foovalue')
-              contains(t, arr, /\xffttl\xff\d{13}!bar/, 'bar')
+              contains(t, arr, /\xffttl\xff!x!\d{13}!bar/, 'bar')
               contains(t, arr, '\xffttl\xffbar', /\d{13}/)
             }
           })
@@ -300,15 +303,16 @@ ltest('test del', function (db, t, createReadStream) {
 
   db.put('foo', 'foovalue')
   base = Date.now()
-  db.put('bar', 'barvalue', { ttl: 200 })
-  verify(base, 20)
+  db.put('bar', 'barvalue', { ttl: 250 })
+  verify(base, 150)
   setTimeout(function () {
     db.del('bar')
-  }, 50)
+  }, 250)
   // should not exist at all by 70
-  verify(-1, 70)
-  setTimeout(t.end.bind(t), 300)
+  verify(-1, 350)
+  setTimeout(t.end.bind(t), 550)
 })
+
 
 ltest('test del with db value encoding', function (db, t, createReadStream) {
   var verify = function (base, delay) {
@@ -331,7 +335,7 @@ ltest('test del with db value encoding', function (db, t, createReadStream) {
               }
               contains(t, arr, 'bar', '{"v":"barvalue"}')
               contains(t, arr, 'foo', '{"v":"foovalue"}')
-              contains(t, arr, /\xffttl\xff\d{13}!bar/, 'bar')
+              contains(t, arr, /\xffttl\xff!x!\d{13}!bar/, 'bar')
               contains(t, arr, '\xffttl\xffbar', /\d{13}/)
             }
           }, { valueEncoding: 'utf8' })
@@ -341,15 +345,16 @@ ltest('test del with db value encoding', function (db, t, createReadStream) {
 
   db.put( 'foo', { v: 'foovalue' })
   base = Date.now()
-  db.put('bar', { v: 'barvalue' }, { ttl: 200 })
-  verify(base, 20)
+  db.put('bar', { v: 'barvalue' }, { ttl: 250 })
+  verify(base, 50)
   setTimeout(function () {
     db.del('bar')
-  }, 50)
+  }, 175)
   // should not exist at all by 70
-  verify(-1, 70)
-  setTimeout(t.end.bind(t), 300)
+  verify(-1, 350)
+  setTimeout(t.end.bind(t), 550)
 }, { keyEncoding: 'utf8', valueEncoding: 'json' })
+
 
 test('test stop() method stops interval and doesn\'t hold process up', function (t) {
   t.plan(9)
@@ -378,20 +383,20 @@ test('test stop() method stops interval and doesn\'t hold process up', function 
 
     t.equals(1, intervals, '1 interval timer')
 
-    db.put( 'foo', 'bar1', { ttl: 10 })
+    db.put( 'foo', 'bar1', { ttl: 25 })
     setTimeout(function () {
       db.get('foo', function (err, value) {
         t.notOk(err, 'no error')
         t.equal('bar1', value)
       })
-    }, 10)
+    }, 40)
     setTimeout(function () {
       db.get('foo', function (err, value) {
         t.ok(err, 'got error')
         t.ok(err.notFound, 'not found error')
         t.notOk(value, 'no value')
       })
-    }, 60)
+    }, 80)
     setTimeout(function () {
       db.stop(function () {
         close(function () {
@@ -402,9 +407,124 @@ test('test stop() method stops interval and doesn\'t hold process up', function 
           })
         })
       })
-    }, 80)
+    }, 120)
   })
 })
+
+
+ltest('single put with default ttl set', function (db, t, createReadStream) {
+  db.put('foo', 'bar1', function(err) {
+    t.ok(!err, 'no error')
+
+    setTimeout(function () {
+      db.get('foo', function (err, value) {
+        t.notOk(err, 'no error')
+        t.equal('bar1', value)
+      })
+    }, 50)
+    setTimeout(function () {
+      db.get('foo', function (err, value) {
+        t.ok(err, 'got error')
+        t.ok(err.notFound, 'not found error')
+        t.notOk(value, 'no value')
+      })
+    }, 125)
+  })
+
+  setTimeout(t.end.bind(t), 175)
+}, {}, { defaultTTL: 75 } )
+
+
+ltest('single put with overridden ttl set', function (db, t, createReadStream) {
+  db.put('foo', 'bar1', { ttl: 99 }, function(err) {
+    t.ok(!err, 'no error')
+
+    setTimeout(function () {
+      db.get('foo', function (err, value) {
+        t.notOk(err, 'no error')
+        t.equal('bar1', value)
+      })
+    }, 50)
+    setTimeout(function () {
+      db.get('foo', function (err, value) {
+        t.ok(err, 'got error')
+        t.ok(err.notFound, 'not found error')
+        t.notOk(value, 'no value')
+      })
+    }, 125)
+  })
+
+  setTimeout(t.end.bind(t), 175)
+}, {}, { defaultTTL: 75 } )
+
+
+ltest('batch put with default ttl set', function (db, t, createReadStream) {
+  db.batch([
+    { type: 'put', key: 'foo', value: 'bar1' },
+    { type: 'put', key: 'bar', value: 'foo1' }
+  ], function(err) {
+    t.ok(!err, 'no error')
+    
+    setTimeout(function () {
+      db.get('foo', function (err, value) {
+        t.notOk(err, 'no error')
+        t.equal('bar1', value)
+        db.get('bar', function(err, value) {
+          t.notOk(err, 'no error')
+          t.equal('foo1', value)
+        })
+      })
+    }, 50)
+    setTimeout(function () {
+      db.get('foo', function (err, value) {
+        t.ok(err, 'got error')
+        t.ok(err.notFound, 'not found error')
+        t.notOk(value, 'no value')
+        db.get('bar', function(err, value) {
+          t.ok(err, 'no error')
+          t.ok(err.notFound, 'not found error')
+          t.notOk(value, 'no value')
+        })
+      })
+    }, 125)
+  })
+  
+  setTimeout(t.end.bind(t), 175)
+}, {}, { defaultTTL: 75 })
+
+
+ltest('batch put with overriden ttl set', function (db, t, createReadStream) {
+  db.batch([
+    { type: 'put', key: 'foo', value: 'bar1' },
+    { type: 'put', key: 'bar', value: 'foo1' }
+  ], { ttl: 99 }, function(err) {
+    setTimeout(function () {
+      db.get('foo', function (err, value) {
+        t.notOk(err, 'no error')
+        t.equal('bar1', value)
+        db.get('bar', function(err, value) {
+          t.notOk(err, 'no error')
+          t.equal('foo1', value)
+        })
+      })
+    }, 50)
+    setTimeout(function () {
+      db.get('foo', function (err, value) {
+        t.ok(err, 'got error')
+        t.ok(err.notFound, 'not found error')
+        t.notOk(value, 'no value')
+        db.get('bar', function(err, value) {
+          t.ok(err, 'no error')
+          t.ok(err.notFound, 'not found error')
+          t.notOk(value, 'no value')
+        })
+      })
+    }, 125)
+  })
+  
+  setTimeout(t.end.bind(t), 175)
+}, {}, { defaultTTL: 75 })
+
 
 test('without options', function (t) {
   var location = '__ttl-' + Math.random()
@@ -430,3 +550,4 @@ test('without options', function (t) {
     t.end()
   })
 })
+
