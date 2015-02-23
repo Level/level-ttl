@@ -1,31 +1,64 @@
-const after  = require('after')
-    , xtend  = require('xtend')
-    , spaces = require('level-spaces')
+const after = require('after')
+    , xtend = require('xtend')
 
     , DEFAULT_FREQUENCY = 10000
+    , QUERY_SEPARATOR   = 'x!'
 
+function expirationKey (db, exp, key) {
+  var separator = db._ttl.options.separator
+  return queryStart(db) + exp + separator + key
+}
+
+function queryStart (db) {
+  return prefix(db) + QUERY_SEPARATOR
+}
+
+function prefix (db) {
+  if (db._ttl.sub)
+    return ''
+
+  var separator = db._ttl.options.separator
+  var namespace = db._ttl.options.namespace
+  return separator + namespace + separator
+}
 
 function startTtl (db, checkFrequency) {
   db._ttl.intervalId = setInterval(function () {
-    var batch    = []
-      , subBatch = []
-      , query = {
+    var batch     = []
+      , subBatch  = []
+      , start     = queryStart(db)
+      , sub       = db._ttl.sub
+      , query     = {
             keyEncoding: 'utf8'
           , valueEncoding: 'utf8'
-          , end: String(Date.now())
+          , start: start
+          , end: start + String(Date.now()) + '~'
         }
+      , createReadStream
 
     db._ttl._checkInProgress = true
-    db._ttl.sub.createReadStream(query)
+
+    if (sub)
+      createReadStream = sub.createReadStream.bind(sub)
+    else
+      createReadStream = db.createReadStream.bind(db)
+
+    createReadStream(query)
       .on('data', function (data) {
-        subBatch.push({ type: 'del', key: data.value })
+        // expirationKey that matches this query
         subBatch.push({ type: 'del', key: data.key })
+        // the value is the key!
+        subBatch.push({ type: 'del', key: prefix(db) + data.value })
+        // the actual data that should expire now!
         batch.push({ type: 'del', key: data.value })
       })
       .on('error', db.emit.bind(db, 'error'))
       .on('end', function () {
-        if (batch.length) {
-          db._ttl.sub.batch(
+        if (!batch.length)
+          return
+
+        if (sub) {
+          sub.batch(
               subBatch
             , { keyEncoding: 'utf8' }
             , function (err) {
@@ -33,6 +66,7 @@ function startTtl (db, checkFrequency) {
                   db.emit('error', err)
               }
           )
+
           db._ttl.batch(
               batch
             , { keyEncoding: 'utf8' }
@@ -42,6 +76,17 @@ function startTtl (db, checkFrequency) {
               }
           )
         }
+        else {
+          db._ttl.batch(
+              subBatch.concat(batch)
+            , { keyEncoding: 'utf8' }
+            , function (err) {
+                if (err)
+                  db.emit('error', err)
+              }
+          )
+        }
+
       })
       .on('close', function () {
         db._ttl._checkInProgress = false
@@ -65,8 +110,10 @@ function stopTtl (db, callback) {
 }
 
 function ttlon (db, keys, ttl, callback) {
-  var exp   = String(Date.now() + ttl)
-    , batch = []
+  var exp     = String(Date.now() + ttl)
+    , sub     = db._ttl.sub
+    , batch   = []
+    , batchFn = (sub ? sub.batch.bind(sub) : db._ttl.batch)
 
   if (!Array.isArray(keys))
     keys = [ keys ]
@@ -75,14 +122,14 @@ function ttlon (db, keys, ttl, callback) {
     keys.forEach(function (key) {
       if (typeof key != 'string')
         key = key.toString()
-      batch.push({ type: 'put', key: key               , value: exp })
-      batch.push({ type: 'put', key: exp + '!' + key, value: key })
+      batch.push({ type: 'put', key: expirationKey(db, exp, key), value: key })
+      batch.push({ type: 'put', key: prefix(db) + key, value: exp })
     })
 
     if (!batch.length)
       return callback && callback()
 
-    db._ttl.sub.batch(
+    batchFn(
         batch
       , { keyEncoding: 'utf8', valueEncoding: 'utf8' }
       , function (err) {
@@ -98,15 +145,18 @@ function ttloff (db, keys, callback) {
   if (!Array.isArray(keys))
     keys = [ keys ]
 
-  var batch = []
-    , done  = after(keys.length, function (err) {
+  var batch   = []
+    , sub     = db._ttl.sub
+    , getFn   = (sub ? sub.get.bind(sub) : db.get.bind(db))
+    , batchFn = (sub ? sub.batch.bind(sub) : db._ttl.batch)
+    , done    = after(keys.length, function (err) {
         if (err)
           db.emit('error', err)
 
         if (!batch.length)
           return callback && callback()
 
-        db._ttl.sub.batch(
+        batchFn(
             batch
           , { keyEncoding: 'utf8', valueEncoding: 'utf8' }
           , function (err) {
@@ -121,13 +171,13 @@ function ttloff (db, keys, callback) {
     if (typeof key != 'string')
       key = key.toString()
 
-    db._ttl.sub.get(
-        key
+    getFn(
+        prefix(db) + key
       , { keyEncoding: 'utf8', valueEncoding: 'utf8' }
       , function (err, exp) {
           if (!err && exp > 0) {
-            batch.push({ type: 'del', key: key })
-            batch.push({ type: 'del', key: exp + '!' + key })
+            batch.push({ type: 'del', key: expirationKey(db, exp, key) })
+            batch.push({ type: 'del', key: prefix(db) + key })
           }
           done(err && err.name != 'NotFoundError' && err)
         }
@@ -136,11 +186,21 @@ function ttloff (db, keys, callback) {
 }
 
 function put (db, key, value, options, callback) {
-  var ttl
-    , done
+  if (typeof options == 'function') {
+    callback = options
+    options = {}
+  }
+
+  options = options || {}
+
+  if (db._ttl.options.defaultTTL > 0 && !options.ttl && options.ttl != 0) {
+    options.ttl = db._ttl.options.defaultTTL
+  }
+
+  var done
     , _callback = callback
 
-  if (typeof options == 'object' && (ttl = options.ttl) > 0
+  if (options.ttl > 0
       && key !== null && key !== undefined
       && value !== null && value !== undefined) {
 
@@ -170,13 +230,23 @@ function del (db, key, options, callback) {
 }
 
 function batch (db, arr, options, callback) {
-  var ttl
-    , done
+  if (typeof options == 'function') {
+    callback = options
+    options = {}
+  }
+
+  options = options || {}
+
+  if (db._ttl.options.defaultTTL > 0 && !options.ttl && options.ttl != 0) {
+    options.ttl = db._ttl.options.defaultTTL
+  }
+
+  var done
     , on
     , off
     , _callback = callback
 
-  if (typeof options == 'object' && (ttl = options.ttl) > 0 && Array.isArray(arr)) {
+  if (options.ttl > 0 && Array.isArray(arr)) {
     done = after(3, _callback || function () {})
     callback = done
 
@@ -219,22 +289,21 @@ function setup (db, options) {
 
   options = options || {}
 
-  // backwards compatibility
-  if (!options.namespace && options.sublevel)
-    options.namespace = options.sublevel
-
   options = xtend({
       methodPrefix   : ''
     , namespace      : 'ttl'
+    , separator      : '!'
     , checkFrequency : DEFAULT_FREQUENCY
+    , defaultTTL     : 0
   }, options)
 
   db._ttl = {
-      put   : db.put.bind(db)
-    , del   : db.del.bind(db)
-    , batch : db.batch.bind(db)
-    , close : db.close.bind(db)
-    , sub   : options.sub || spaces(db, options.namespace)
+      put     : db.put.bind(db)
+    , del     : db.del.bind(db)
+    , batch   : db.batch.bind(db)
+    , close   : db.close.bind(db)
+    , sub     : options.sub
+    , options : options
   }
 
   db[options.methodPrefix + 'put']   = put.bind(null, db)
