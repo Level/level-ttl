@@ -1,6 +1,5 @@
-const test       = require('tape')
-    , rimraf     = require('rimraf')
-    , levelup    = require('level')
+const tape       = require('tape')
+    , ltest      = require('ltest')(tape)
     , listStream = require('list-stream')
     , ttl        = require('./')
     , xtend      = require('xtend')
@@ -11,28 +10,15 @@ function fixtape (t) {
   }
 }
 
-function ltest (name, fn, opts, ttl_opts) {
-  test(name, function (t) {
-    var location = '__ttl-' + Math.random()
-      , db
+function test (name, fn, opts) {
+  ltest(name, opts, function (t, _db, createReadStream) {
+    var db
+      , close = _db.close.bind(_db) // unmolested close()
 
-    t.__end = t.end
-    t.end = function () {
-      db.close(function (err) {
-        t.notOk(err, 'no error on close()')
-        rimraf(location, t.__end.bind(t))
-      })
-    }
     fixtape(t)
 
-    levelup(location, opts, function (err, _db) {
-      t.notOk(err, 'no error on open()')
-
-      var createReadStream = _db.createReadStream.bind(_db)
-      db = ttl(_db, xtend({ checkFrequency: 50 }, ttl_opts))
-
-      fn(db, t, createReadStream)
-    })
+    db = ttl(_db, xtend({ checkFrequency: 50 }, opts))
+    fn(t, db, createReadStream, close)
   })
 }
 
@@ -62,13 +48,13 @@ function contains (t, arr, key, value) {
 
 // test that the standard API is working as it should
 // kind of a lame test but we know they should throw
-false && ltest('test single ttl entry', function (db, t) {
+false && test('test single ttl entry', function (db, t) {
   t.throws(db.put.bind(db), { name: 'WriteError', message: 'put() requires key and value arguments' })
   t.throws(db.del.bind(db), { name: 'WriteError', message: 'del() requires a key argument' })
   t.end()
 })
 
-ltest('test single ttl entry with put', function (db, t, createReadStream) {
+test('test single ttl entry with put', function (t, db, createReadStream) {
   db.put('foo', 'foovalue', function (err) {
     t.notOk(err, 'no error')
     var base = Date.now() // *should* be able to catch it to the ms
@@ -100,7 +86,7 @@ ltest('test single ttl entry with put', function (db, t, createReadStream) {
   })
 })
 
-ltest('test multiple ttl entries with put', function (db, t, createReadStream) {
+test('test multiple ttl entries with put', function (t, db, createReadStream) {
   var expect = function (delay, keys) {
         setTimeout(function () {
           db2arr(createReadStream, t, function (err, arr) {
@@ -139,7 +125,7 @@ ltest('test multiple ttl entries with put', function (db, t, createReadStream) {
   setTimeout(t.end.bind(t), 600)
 })
 
-ltest('test multiple ttl entries with batch-put', function (db, t, createReadStream) {
+test('test multiple ttl entries with batch-put', function (t, db, createReadStream) {
   var expect = function (delay, keys) {
         setTimeout(function () {
           db2arr(createReadStream, t, function (err, arr) {
@@ -185,7 +171,7 @@ ltest('test multiple ttl entries with batch-put', function (db, t, createReadStr
   setTimeout(t.end.bind(t), 275)
 })
 
-ltest('test prolong entry life with additional put', function (db, t, createReadStream) {
+test('test prolong entry life with additional put', function (t, db, createReadStream) {
   var putBar = function () {
         db.put('bar', 'barvalue', { ttl: 250 })
         return Date.now()
@@ -223,7 +209,7 @@ ltest('test prolong entry life with additional put', function (db, t, createRead
   setTimeout(t.end.bind(t), 300)
 })
 
-ltest('test prolong entry life with ttl(key, ttl)', function (db, t, createReadStream) {
+test('test prolong entry life with ttl(key, ttl)', function (t, db, createReadStream) {
   var ttlBar = function () {
         db.ttl('bar', 250)
         return Date.now()
@@ -262,7 +248,7 @@ ltest('test prolong entry life with ttl(key, ttl)', function (db, t, createReadS
   setTimeout(t.end.bind(t), 300)
 })
 
-ltest('test del', function (db, t, createReadStream) {
+test('test del', function (t, db, createReadStream) {
   var verify = function (base, delay) {
         setTimeout(function () {
           db2arr(createReadStream, t, function (err, arr) {
@@ -303,7 +289,7 @@ ltest('test del', function (db, t, createReadStream) {
   setTimeout(t.end.bind(t), 550)
 })
 
-ltest('test del with db value encoding', function (db, t, createReadStream) {
+test('test del with db value encoding', function (t, db, createReadStream) {
   var verify = function (base, delay) {
         setTimeout(function () {
           db2arr(createReadStream, t, function (err, arr) {
@@ -344,32 +330,24 @@ ltest('test del with db value encoding', function (db, t, createReadStream) {
   setTimeout(t.end.bind(t), 550)
 }, { keyEncoding: 'utf8', valueEncoding: 'json' })
 
-test('test stop() method stops interval and doesn\'t hold process up', function (t) {
-  t.plan(9)
+function wrappedTest () {
+  var intervals      = 0
+    , _setInterval   = global.setInterval
+    , _clearInterval = global.clearInterval
 
-  var location = '__ttl-' + Math.random()
-    , intervals = 0
-    , db
-    , close
-
-  global._setInterval = global.setInterval
   global.setInterval = function () {
     intervals++
-    return global._setInterval.apply(global, arguments)
+    return _setInterval.apply(global, arguments)
   }
-  global._clearInterval = global.clearInterval
+
   global.clearInterval = function () {
     intervals--
-    return global._clearInterval.apply(global, arguments)
+    return _clearInterval.apply(global, arguments)
   }
 
-  levelup(location, function (err, _db) {
-    t.notOk(err, 'no error on open()')
-    close = _db.close.bind(_db) // unmolested close()
+  test('test stop() method stops interval and doesn\'t hold process up', function (t, db, createReadStream, close) {
 
-    db = ttl(_db, { checkFrequency: 50 })
-
-    t.equals(1, intervals, '1 interval timer')
+    t.equals(intervals, 1, '1 interval timer')
 
     db.put( 'foo', 'bar1', { ttl: 25 })
     setTimeout(function () {
@@ -388,18 +366,21 @@ test('test stop() method stops interval and doesn\'t hold process up', function 
     setTimeout(function () {
       db.stop(function () {
         close(function () {
-          global.setInterval = global._setInterval
+          global.setInterval = _setInterval
+          global.clearInterval = _clearInterval
           t.equals(0, intervals, 'all interval timers cleared')
-          rimraf(location, function () {
-            t.ok('rimraffed')
-          })
+          t.end()
         })
       })
     }, 120)
-  })
-})
 
-ltest('single put with default ttl set', function (db, t, createReadStream) {
+  })
+
+}
+
+wrappedTest()
+
+test('single put with default ttl set', function (t, db, createReadStream) {
   db.put('foo', 'bar1', function(err) {
     t.ok(!err, 'no error')
 
@@ -419,9 +400,9 @@ ltest('single put with default ttl set', function (db, t, createReadStream) {
   })
 
   setTimeout(t.end.bind(t), 175)
-}, {}, { defaultTTL: 75 } )
+}, { defaultTTL: 75 } )
 
-ltest('single put with overridden ttl set', function (db, t, createReadStream) {
+test('single put with overridden ttl set', function (t, db, createReadStream) {
   db.put('foo', 'bar1', { ttl: 99 }, function(err) {
     t.ok(!err, 'no error')
 
@@ -441,15 +422,15 @@ ltest('single put with overridden ttl set', function (db, t, createReadStream) {
   })
 
   setTimeout(t.end.bind(t), 175)
-}, {}, { defaultTTL: 75 } )
+}, { defaultTTL: 75 } )
 
-ltest('batch put with default ttl set', function (db, t, createReadStream) {
+test('batch put with default ttl set', function (t, db, createReadStream) {
   db.batch([
     { type: 'put', key: 'foo', value: 'bar1' },
     { type: 'put', key: 'bar', value: 'foo1' }
   ], function(err) {
     t.ok(!err, 'no error')
-    
+
     setTimeout(function () {
       db.get('foo', function (err, value) {
         t.notOk(err, 'no error')
@@ -475,9 +456,9 @@ ltest('batch put with default ttl set', function (db, t, createReadStream) {
   })
 
   setTimeout(t.end.bind(t), 175)
-}, {}, { defaultTTL: 75 })
+}, { defaultTTL: 75 })
 
-ltest('batch put with overriden ttl set', function (db, t, createReadStream) {
+test('batch put with overriden ttl set', function (t, db, createReadStream) {
   db.batch([
     { type: 'put', key: 'foo', value: 'bar1' },
     { type: 'put', key: 'bar', value: 'foo1' }
@@ -507,29 +488,13 @@ ltest('batch put with overriden ttl set', function (db, t, createReadStream) {
   })
 
   setTimeout(t.end.bind(t), 175)
-}, {}, { defaultTTL: 75 })
+}, { defaultTTL: 75 })
 
-test('without options', function (t) {
-  var location = '__ttl-' + Math.random()
-    , db
-
-  t.__end = t.end
-  t.end = function () {
-    db.close(function (err) {
-      t.notOk(err, 'no error on close()')
-      rimraf(location, t.__end.bind(t))
-    })
+ltest('without options', function (t, db, createReadStream) {
+  try {
+    ttl(db)
+  } catch(err) {
+    t.notOk(err, 'no error on ttl()')
   }
-
-  levelup(location, function (err, _db) {
-    t.notOk(err, 'no error on open()')
-
-    var createReadStream = _db.createReadStream.bind(_db)
-    try {
-      db = ttl(_db)
-    } catch(err) {
-      t.notOk(err, 'no error on ttl()')
-    }
-    t.end()
-  })
+  t.end()
 })
