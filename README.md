@@ -11,7 +11,9 @@ Augment LevelUP to handle a new `'ttl'` option on `put()` and `batch()` that spe
 
 Requires [LevelUP](https://github.com/rvagg/node-levelup) (or [Level](https://github.com/level/level)) to be installed separately.
 
-***Note: version 1.0.0 data stores are not backward compatible with previous versions. If you have unexpired entries in a data store managed by pre-1.0.0, don't expect them to expire if you upgrade to 1.0.0+.*** *This is due to a level-sublevel change. It is also recommended that you only use level-sublevel 6.0.0+ with level-ttl.*
+***Note 1: Version 1.0.0 data stores are not backward compatible with previous versions. If you have unexpired entries in a data store managed by pre-1.0.0, don't expect them to expire if you upgrade to 1.0.0+.*** *This is due to a level-sublevel change. It is also recommended that you only use level-sublevel 6.0.0+ with level-ttl.*
+
+***Note 2: `level-ttl` has partial support for `level-spaces`. It should work fine as long as you don't use the `'defaultTTL'` feature, see below. This is being worked on so we can have full support for `level-spaces` as well.***
 
 ```js
 var levelup  = require('level')
@@ -45,7 +47,7 @@ db.ttl('foo', 1000 * 60 * 60, function (err) { /* .. */ })
 **Level TTL** uses an internal scan every 10 seconds by default, this limits the available resolution of your TTL values, possibly delaying a delete for up to 10 seconds. The resolution can be tuned by passing the `'checkFrequency'` option to the `ttl()` initialiser.
 
 ```js
-var db = level('/tmp/foo.db')
+var db = levelup('/tmp/foo.db')
 // scan for deletables every second
 db = ttl(db, { checkFrequency: 1000 })
 
@@ -61,7 +63,7 @@ You can set a default ttl value for all your keys by passing the `'defaultTTL'` 
 In the following examle `'foo'` will expire in 15 minutes while `'beep'` will expire in one minute.
 
 ```js
-var db = level('/tmp/foo.db')
+var db = levelup('/tmp/foo.db')
 db = ttl(db, { defaultTTL: 15 * 60 * 1000 })
 db.put('foo', 'bar', function (err) { /* .. */ })
 db.put('beep', 'boop', { ttl: 60 * 1000 }, function (err) { /* .. */ })
