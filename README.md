@@ -54,6 +54,19 @@ db = ttl(db, { checkFrequency: 1000 })
 
 Of course, a scan takes some resources, particularly on a data store that makes heavy use of TTLs. If you don't require high accuracy for actual deletions then you can increase the `'checkFrequency'`. Note though that a scan only involves invoking a LevelUP ReadStream that returns *only the entries due to expire*, so it doesn't have to manually check through all entries with a TTL. As usual, it's best to not do too much tuning until you have you have something worth tuning!
 
+### Default TTL
+
+You can set a default ttl value for all your keys by passing the `'defaultTTL'` option to the `ttl()` initialiser. This can be overridden by explicitly setting the ttl value.
+
+In the following examle `'foo'` will expire in 15 minutes while `'beep'` will expire in one minute.
+
+```js
+var db = level('/tmp/foo.db')
+db = ttl(db, { defaultTTL: 15 * 60 * 1000 })
+db.put('foo', 'bar', function (err) { /* .. */ })
+db.put('beep', 'boop', { ttl: 60 * 1000 }, function (err) { /* .. */ })
+```
+
 ### Shutting down
 
 **Level TTL** uses a timer to regularly check for expiring entries (don't worry, the whole data store isn't scanned, it's very efficient!). The `db.close()` method is automatically wired to stop the timer but there is also a more explicit <b><code>db.stop()</code></b> method that will stop the timer and not pass on to a `close()` underlying LevelUP instance.
@@ -65,6 +78,8 @@ Of course, a scan takes some resources, particularly on a data store that makes 
  * [Rod Vagg](https://github.com/rvagg)
  * [Matteo Collina](https://github.com/mcollina)
  * [Josh Duff](https://github.com/TehShrike)
+ * [Erik Kristensen](https://github.com/ekristen)
+ * [Lars-Magnus Skog](https://github.com/ralphtheninja)
 
 ## Licence
 
