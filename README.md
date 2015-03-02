@@ -9,7 +9,7 @@
 
 Augment LevelUP to handle a new `'ttl'` option on `put()` and `batch()` that specifies the number of milliseconds an entry should remain in the data store. After the TTL, the entry will be automatically cleared for you.
 
-Requires [LevelUP](https://github.com/rvagg/node-levelup) (or [Level](https://github.com/level/level)) to be installed separately.
+Requires [LevelUP](https://github.com/rvagg/node-levelup), [Level](https://github.com/level/level) or [level-hyper](https://github.com/Level/level-hyper) to be installed separately.
 
 ***Note 1: Version 1.0.0 data stores are not backward compatible with previous versions. If you have unexpired entries in a data store managed by pre-1.0.0, don't expect them to expire if you upgrade to 1.0.0+.*** *This is due to a level-sublevel change. It is also recommended that you only use level-sublevel 6.0.0+ with level-ttl.*
 
