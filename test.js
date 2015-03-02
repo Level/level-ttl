@@ -46,9 +46,7 @@ function contains (t, arr, key, value) {
   return t.fail('does not contain {' + (key.source || key) + ', ' + (value.source || value) + '}')
 }
 
-// test that the standard API is working as it should
-// kind of a lame test but we know they should throw
-false && test('test single ttl entry', function (db, t) {
+test('test single ttl entry', function (t, db) {
   t.throws(db.put.bind(db), { name: 'WriteError', message: 'put() requires key and value arguments' })
   t.throws(db.del.bind(db), { name: 'WriteError', message: 'del() requires a key argument' })
   t.end()
