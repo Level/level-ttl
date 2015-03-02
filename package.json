@@ -32,11 +32,12 @@
   },
   "peerDependencies": {},
   "devDependencies": {
+    "faucet": "0.0.1",
     "ltest": "2.0.0",
     "tape": ">=2.14.0 <2.15.0-0"
   },
   "scripts": {
-    "test": "node ./test.js"
+    "test": "tape test.js | faucet"
   },
   "license": "MIT"
 }
