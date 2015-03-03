@@ -100,7 +100,7 @@ test('single ttl entry with put', function (t, db, createReadStream) {
 })
 
 test('multiple ttl entries with put', function (t, db, createReadStream) {
-  var expect = function (delay, keys) {
+  var expect = function (delay, keys, cb) {
         setTimeout(function () {
           db2arr(createReadStream, t, function (err, arr) {
             t.notOk(err, 'no error')
@@ -121,6 +121,7 @@ test('multiple ttl entries with put', function (t, db, createReadStream) {
               contains(t, arr, /^!ttl!x!\d{13}!bar3$/, 'bar3')
               contains(t, arr, '!ttl!bar3', /^\d{13}$/)
             }
+            cb && cb()
           })
         }, delay)
       }
@@ -131,11 +132,9 @@ test('multiple ttl entries with put', function (t, db, createReadStream) {
   db.put('bar3', 'barvalue3', { ttl: 100 })
 
   expect(25, 3)
-  expect(150, 2)
-  expect(300, 1)
-  expect(450, 0)
-
-  setTimeout(t.end.bind(t), 600)
+  expect(200, 2)
+  expect(350, 1)
+  expect(500, 0, t.end.bind(t))
 })
 
 test('multiple ttl entries with batch-put', function (t, db, createReadStream) {
