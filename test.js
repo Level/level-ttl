@@ -287,8 +287,7 @@ function wrappedTest () {
 
     setTimeout(function () {
       db.get('foo', function (err, value) {
-        t.ok(err, 'got error')
-        t.ok(err.notFound, 'not found error')
+        t.ok(err && err.notFound, 'not found error')
         t.notOk(value, 'no value')
       })
     }, 80)
@@ -321,8 +320,7 @@ test('single put with default ttl set', function (t, db, createReadStream) {
 
     setTimeout(function () {
       db.get('foo', function (err, value) {
-        t.ok(err, 'got error')
-        t.ok(err.notFound, 'not found error')
+        t.ok(err && err.notFound, 'not found error')
         t.notOk(value, 'no value')
       })
     }, 125)
@@ -343,8 +341,7 @@ test('single put with overridden ttl set', function (t, db, createReadStream) {
 
     setTimeout(function () {
       db.get('foo', function (err, value) {
-        t.ok(err, 'got error')
-        t.ok(err.notFound, 'not found error')
+        t.ok(err && err.notFound, 'not found error')
         t.notOk(value, 'no value')
       })
     }, 125)
@@ -372,12 +369,10 @@ test('batch put with default ttl set', function (t, db, createReadStream) {
 
     setTimeout(function () {
       db.get('foo', function (err, value) {
-        t.ok(err, 'got error')
-        t.ok(err.notFound, 'not found error')
+        t.ok(err && err.notFound, 'not found error')
         t.notOk(value, 'no value')
         db.get('bar', function(err, value) {
-          t.ok(err, 'no error')
-          t.ok(err.notFound, 'not found error')
+          t.ok(err && err.notFound, 'not found error')
           t.notOk(value, 'no value')
         })
       })
@@ -405,12 +400,10 @@ test('batch put with overriden ttl set', function (t, db, createReadStream) {
 
     setTimeout(function () {
       db.get('foo', function (err, value) {
-        t.ok(err, 'got error')
-        t.ok(err.notFound, 'not found error')
+        t.ok(err && err.notFound, 'not found error')
         t.notOk(value, 'no value')
         db.get('bar', function(err, value) {
-          t.ok(err, 'no error')
-          t.ok(err.notFound, 'not found error')
+          t.ok(err && err.notFound, 'not found error')
           t.notOk(value, 'no value')
         })
       })
