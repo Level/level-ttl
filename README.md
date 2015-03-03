@@ -69,6 +69,39 @@ db.put('foo', 'bar', function (err) { /* .. */ })
 db.put('beep', 'boop', { ttl: 60 * 1000 }, function (err) { /* .. */ })
 ```
 
+### `opts.sub`
+
+You can provide a custom storage for the meta data by using the `opts.sub` property. If it's set, that storage will contain all the ttl meta data. A use case for this would be to avoid mixing data and meta data in the same keyspace, since if it's not set, all data will be sharing the same keyspace.
+
+A db for the data and a separate to store the meta data:
+
+```js
+var level = require('level')
+  , ttl   = require('level-ttl')
+  , meta  = level('./meta')
+  , db    = ttl(level('./db'), { sub: meta })
+  , batch = [
+        { type: 'put', key: 'foo', value: 'foovalue' }
+      , { type: 'put', key: 'bar', value: 'barvalue' }
+    ]
+
+db.batch(batch, { ttl: 100 }, function (err) {
+  db.createReadStream()
+    .on('data', function (data) {
+      console.log('data', data)
+    })
+    .on('end', function () {
+      meta.createReadStream()
+        .on('data', function (data) {
+          console.log('meta', data)
+        })
+    })
+})
+```
+
+For more examples on this please check the tests involving `level-sublevel`.
+
+
 ### Shutting down
 
 **Level TTL** uses a timer to regularly check for expiring entries (don't worry, the whole data store isn't scanned, it's very efficient!). The `db.close()` method is automatically wired to stop the timer but there is also a more explicit <b><code>db.stop()</code></b> method that will stop the timer and not pass on to a `close()` underlying LevelUP instance.
