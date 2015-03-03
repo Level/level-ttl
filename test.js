@@ -29,7 +29,7 @@ function db2arr (createReadStream, t, callback, opts) {
     .pipe(listStream.obj  (function (err, arr) {
       if (err)
         return t.fail(err)
-      callback(null, arr)
+      callback(arr)
     }))
 }
 
@@ -73,8 +73,7 @@ test('single ttl entry with put', function (t, db, createReadStream) {
     var base = Date.now() // *should* be able to catch it to the ms
     db.put('bar', 'barvalue', { ttl: 100 }, function (err) {
       t.notOk(err, 'no error')
-      db2arr(createReadStream, t, function (err, arr) {
-        t.notOk(err, 'no error')
+      db2arr(createReadStream, t, function (arr) {
         var ts = base + 100
         // allow 1ms leeway
         if (arr[3] && arr[3].value != String(ts))
@@ -85,8 +84,7 @@ test('single ttl entry with put', function (t, db, createReadStream) {
         contains(t, arr, 'bar', 'barvalue')
         contains(t, arr, 'foo', 'foovalue')
         setTimeout(function () {
-          db2arr(createReadStream, t, function (err, arr) {
-            t.notOk(err, 'no error')
+          db2arr(createReadStream, t, function (arr) {
             t.deepEqual(arr, [
                 { key: 'foo', value: 'foovalue' }
             ])
@@ -102,8 +100,7 @@ test('single ttl entry with put', function (t, db, createReadStream) {
 test('multiple ttl entries with put', function (t, db, createReadStream) {
   var expect = function (delay, keys, cb) {
         setTimeout(function () {
-          db2arr(createReadStream, t, function (err, arr) {
-            t.notOk(err, 'no error')
+          db2arr(createReadStream, t, function (arr) {
             t.equal(arr.length, 1 + keys * 3, 'correct number of entries in db')
             contains(t, arr, 'afoo', 'foovalue')
             if (keys >= 1) {
@@ -140,8 +137,7 @@ test('multiple ttl entries with put', function (t, db, createReadStream) {
 test('multiple ttl entries with batch-put', function (t, db, createReadStream) {
   var expect = function (delay, keys) {
         setTimeout(function () {
-          db2arr(createReadStream, t, function (err, arr) {
-            t.notOk(err, 'no error')
+          db2arr(createReadStream, t, function (arr) {
             t.equal(arr.length, 1 + keys * 3, 'correct number of entries in db')
             contains(t, arr, 'afoo', 'foovalue')
             if (keys >= 1) {
@@ -190,8 +186,7 @@ test('prolong entry life with additional put', function (t, db, createReadStream
       }
     , verify = function (base, delay) {
         setTimeout(function () {
-          db2arr(createReadStream, t, function (err, arr) {
-            t.notOk(err, 'no error')
+          db2arr(createReadStream, t, function (arr) {
             var ts = base + 37
               , i  = 0
             // allow +/- 3ms leeway, allow for processing speed and Node timer inaccuracy
@@ -228,8 +223,7 @@ test('prolong entry life with ttl(key, ttl)', function (t, db, createReadStream)
       }
     , verify = function (base, delay) {
         setTimeout(function () {
-          db2arr(createReadStream, t, function (err, arr) {
-            t.notOk(err, 'no error')
+          db2arr(createReadStream, t, function (arr) {
             var ts = base + 37
               , i  = 0
             // allow +/- 3ms leeway, allow for processing speed and Node timer inaccuracy
@@ -263,8 +257,7 @@ test('prolong entry life with ttl(key, ttl)', function (t, db, createReadStream)
 test('del removes both key and its ttl meta data', function (t, db, createReadStream) {
   var verify = function (base, delay) {
         setTimeout(function () {
-          db2arr(createReadStream, t, function (err, arr) {
-            t.notOk(err, 'no error')
+          db2arr(createReadStream, t, function (arr) {
             if (base == -1) {
               // test complete deletion
               t.deepEqual(arr, [
@@ -304,8 +297,7 @@ test('del removes both key and its ttl meta data', function (t, db, createReadSt
 test('del removes both key and its ttl meta data (value encoding)', function (t, db, createReadStream) {
   var verify = function (base, delay) {
         setTimeout(function () {
-          db2arr(createReadStream, t, function (err, arr) {
-            t.notOk(err, 'no error')
+          db2arr(createReadStream, t, function (arr) {
             if (base == -1) {
               // test complete deletion
               t.deepEqual(arr, [
@@ -520,8 +512,7 @@ ltest('data and level-sublevel ttl meta data separation', function (t, db, creat
 
   ttldb.batch(batch, { ttl: 10000 }, function (err) {
     t.ok(!err, 'no error')
-    db2arr(createReadStream, t, function (err, arr) {
-      t.notOk(err, 'no error')
+    db2arr(createReadStream, t, function (arr) {
       batch.forEach(function (item) {
         contains(t, arr, '!meta!' + item.key, /\d{13}/)
         contains(t, arr, new RegExp("!meta!x!\\d{13}!" + item.key), item.key)
@@ -539,8 +530,7 @@ ltest('that level-sublevel data expires properly', function (t, db, createReadSt
   ttldb.batch(randomPutBatch(50), { ttl: 100 }, function (err) {
     t.ok(!err, 'no error')
     setTimeout(function () {
-      db2arr(createReadStream, t, function (err, arr) {
-        t.notOk(err, 'no error')
+      db2arr(createReadStream, t, function (arr) {
         t.equal(arr.length, 0, 'should be empty array')
         t.end()
       })
