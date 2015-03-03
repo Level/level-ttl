@@ -308,13 +308,13 @@ function wrappedTest () {
 wrappedTest()
 
 test('single put with default ttl set', function (t, db, createReadStream) {
-  db.put('foo', 'bar1', function(err) {
+  db.put('foo', 'foovalue', function(err) {
     t.ok(!err, 'no error')
 
     setTimeout(function () {
       db.get('foo', function (err, value) {
         t.notOk(err, 'no error')
-        t.equal('bar1', value)
+        t.equal('foovalue', value)
       })
     }, 50)
 
@@ -330,12 +330,12 @@ test('single put with default ttl set', function (t, db, createReadStream) {
 }, { defaultTTL: 75 } )
 
 test('single put with overridden ttl set', function (t, db, createReadStream) {
-  db.put('foo', 'bar1', { ttl: 99 }, function(err) {
+  db.put('foo', 'foovalue', { ttl: 99 }, function(err) {
     t.ok(!err, 'no error')
     setTimeout(function () {
       db.get('foo', function (err, value) {
         t.notOk(err, 'no error')
-        t.equal('bar1', value)
+        t.equal('foovalue', value)
       })
     }, 50)
 
@@ -352,17 +352,17 @@ test('single put with overridden ttl set', function (t, db, createReadStream) {
 
 test('batch put with default ttl set', function (t, db, createReadStream) {
   db.batch([
-    { type: 'put', key: 'foo', value: 'bar1' },
-    { type: 'put', key: 'bar', value: 'foo1' }
+    { type: 'put', key: 'foo', value: 'foovalue' },
+    { type: 'put', key: 'bar', value: 'barvalue' }
   ], function(err) {
     t.ok(!err, 'no error')
     setTimeout(function () {
       db.get('foo', function (err, value) {
         t.notOk(err, 'no error')
-        t.equal('bar1', value)
+        t.equal('foovalue', value)
         db.get('bar', function(err, value) {
           t.notOk(err, 'no error')
-          t.equal('foo1', value)
+          t.equal('barvalue', value)
         })
       })
     }, 50)
@@ -384,16 +384,16 @@ test('batch put with default ttl set', function (t, db, createReadStream) {
 
 test('batch put with overriden ttl set', function (t, db, createReadStream) {
   db.batch([
-    { type: 'put', key: 'foo', value: 'bar1' },
-    { type: 'put', key: 'bar', value: 'foo1' }
+    { type: 'put', key: 'foo', value: 'foovalue' },
+    { type: 'put', key: 'bar', value: 'barvalue' }
   ], { ttl: 99 }, function(err) {
     setTimeout(function () {
       db.get('foo', function (err, value) {
         t.notOk(err, 'no error')
-        t.equal('bar1', value)
+        t.equal('foovalue', value)
         db.get('bar', function(err, value) {
           t.notOk(err, 'no error')
-          t.equal('foo1', value)
+          t.equal('barvalue', value)
         })
       })
     }, 50)
