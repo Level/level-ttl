@@ -59,7 +59,7 @@ function randomPutBatch (length) {
   return batch
 }
 
-function verifyIn(delay, createReadStream, t, cb, opts) {
+function verifyIn (delay, createReadStream, t, cb, opts) {
   setTimeout(function () {
     db2arr(createReadStream, t, cb, opts)
   }, delay)
@@ -322,11 +322,11 @@ test('single put with default ttl set', function (t, db, createReadStream) {
       db.get('foo', function (err, value) {
         t.ok(err && err.notFound, 'not found error')
         t.notOk(value, 'no value')
+        t.end()
       })
-    }, 125)
+    }, 175)
   })
 
-  setTimeout(t.end.bind(t), 175)
 }, { defaultTTL: 75 } )
 
 test('single put with overridden ttl set', function (t, db, createReadStream) {
@@ -343,11 +343,11 @@ test('single put with overridden ttl set', function (t, db, createReadStream) {
       db.get('foo', function (err, value) {
         t.ok(err && err.notFound, 'not found error')
         t.notOk(value, 'no value')
+        t.end()
       })
-    }, 125)
+    }, 200)
   })
 
-  setTimeout(t.end.bind(t), 175)
 }, { defaultTTL: 75 } )
 
 test('batch put with default ttl set', function (t, db, createReadStream) {
@@ -374,12 +374,12 @@ test('batch put with default ttl set', function (t, db, createReadStream) {
         db.get('bar', function(err, value) {
           t.ok(err && err.notFound, 'not found error')
           t.notOk(value, 'no value')
+          t.end()
         })
       })
-    }, 125)
+    }, 175)
   })
 
-  setTimeout(t.end.bind(t), 175)
 }, { defaultTTL: 75 })
 
 test('batch put with overriden ttl set', function (t, db, createReadStream) {
@@ -405,12 +405,12 @@ test('batch put with overriden ttl set', function (t, db, createReadStream) {
         db.get('bar', function(err, value) {
           t.ok(err && err.notFound, 'not found error')
           t.notOk(value, 'no value')
+          t.end()
         })
       })
-    }, 125)
+    }, 200)
   })
 
-  setTimeout(t.end.bind(t), 175)
 }, { defaultTTL: 75 })
 
 ltest('without options', function (t, db, createReadStream) {
