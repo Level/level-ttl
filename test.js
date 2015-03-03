@@ -3,6 +3,8 @@ const tape       = require('tape')
     , listStream = require('list-stream')
     , ttl        = require('./')
     , xtend      = require('xtend')
+    , sublevel   = require('level-sublevel')
+    , random     = require('slump')
 
 function fixtape (t) {
   t.like = function (str, reg, msg) {
@@ -46,13 +48,26 @@ function contains (t, arr, key, value) {
   return t.fail('does not contain {' + (key.source || key) + ', ' + (value.source || value) + '}')
 }
 
-test('test single ttl entry', function (t, db) {
+function randomPutBatch (length) {
+  var batch     = []
+    , randomize = function () {
+      return random.string({ enc: 'base58', length: 10 })
+    }
+
+  for (var i = 0; i < length; ++i) {
+    batch.push({ type: 'put', key: randomize(), value: randomize() })
+  }
+
+  return batch
+}
+
+test('single ttl entry', function (t, db) {
   t.throws(db.put.bind(db), { name: 'WriteError', message: 'put() requires key and value arguments' })
   t.throws(db.del.bind(db), { name: 'WriteError', message: 'del() requires a key argument' })
   t.end()
 })
 
-test('test single ttl entry with put', function (t, db, createReadStream) {
+test('single ttl entry with put', function (t, db, createReadStream) {
   db.put('foo', 'foovalue', function (err) {
     t.notOk(err, 'no error')
     var base = Date.now() // *should* be able to catch it to the ms
@@ -84,7 +99,7 @@ test('test single ttl entry with put', function (t, db, createReadStream) {
   })
 })
 
-test('test multiple ttl entries with put', function (t, db, createReadStream) {
+test('multiple ttl entries with put', function (t, db, createReadStream) {
   var expect = function (delay, keys) {
         setTimeout(function () {
           db2arr(createReadStream, t, function (err, arr) {
@@ -123,7 +138,7 @@ test('test multiple ttl entries with put', function (t, db, createReadStream) {
   setTimeout(t.end.bind(t), 600)
 })
 
-test('test multiple ttl entries with batch-put', function (t, db, createReadStream) {
+test('multiple ttl entries with batch-put', function (t, db, createReadStream) {
   var expect = function (delay, keys) {
         setTimeout(function () {
           db2arr(createReadStream, t, function (err, arr) {
@@ -169,7 +184,7 @@ test('test multiple ttl entries with batch-put', function (t, db, createReadStre
   setTimeout(t.end.bind(t), 275)
 })
 
-test('test prolong entry life with additional put', function (t, db, createReadStream) {
+test('prolong entry life with additional put', function (t, db, createReadStream) {
   var putBar = function () {
         db.put('bar', 'barvalue', { ttl: 250 })
         return Date.now()
@@ -207,7 +222,7 @@ test('test prolong entry life with additional put', function (t, db, createReadS
   setTimeout(t.end.bind(t), 300)
 })
 
-test('test prolong entry life with ttl(key, ttl)', function (t, db, createReadStream) {
+test('prolong entry life with ttl(key, ttl)', function (t, db, createReadStream) {
   var ttlBar = function () {
         db.ttl('bar', 250)
         return Date.now()
@@ -246,7 +261,7 @@ test('test prolong entry life with ttl(key, ttl)', function (t, db, createReadSt
   setTimeout(t.end.bind(t), 300)
 })
 
-test('test del', function (t, db, createReadStream) {
+test('del removes both key and its ttl meta data', function (t, db, createReadStream) {
   var verify = function (base, delay) {
         setTimeout(function () {
           db2arr(createReadStream, t, function (err, arr) {
@@ -265,8 +280,8 @@ test('test del', function (t, db, createReadStream) {
                   break
                 ts++
               }
-              contains(t, arr, 'bar', 'barvalue')
               contains(t, arr, 'foo', 'foovalue')
+              contains(t, arr, 'bar', 'barvalue')
               contains(t, arr, /!ttl!x!\d{13}!bar/, 'bar')
               contains(t, arr, '!ttl!bar', /\d{13}/)
             }
@@ -287,7 +302,7 @@ test('test del', function (t, db, createReadStream) {
   setTimeout(t.end.bind(t), 550)
 })
 
-test('test del with db value encoding', function (t, db, createReadStream) {
+test('del removes both key and its ttl meta data (value encoding)', function (t, db, createReadStream) {
   var verify = function (base, delay) {
         setTimeout(function () {
           db2arr(createReadStream, t, function (err, arr) {
@@ -306,8 +321,8 @@ test('test del with db value encoding', function (t, db, createReadStream) {
                   break
                 ts++
               }
-              contains(t, arr, 'bar', '{"v":"barvalue"}')
               contains(t, arr, 'foo', '{"v":"foovalue"}')
+              contains(t, arr, 'bar', '{"v":"barvalue"}')
               contains(t, arr, /!ttl!x!\d{13}!bar/, 'bar')
               contains(t, arr, '!ttl!bar', /\d{13}/)
             }
@@ -344,16 +359,16 @@ function wrappedTest () {
   }
 
   test('test stop() method stops interval and doesn\'t hold process up', function (t, db, createReadStream, close) {
-
     t.equals(intervals, 1, '1 interval timer')
-
     db.put( 'foo', 'bar1', { ttl: 25 })
+
     setTimeout(function () {
       db.get('foo', function (err, value) {
         t.notOk(err, 'no error')
         t.equal('bar1', value)
       })
     }, 40)
+
     setTimeout(function () {
       db.get('foo', function (err, value) {
         t.ok(err, 'got error')
@@ -361,6 +376,7 @@ function wrappedTest () {
         t.notOk(value, 'no value')
       })
     }, 80)
+
     setTimeout(function () {
       db.stop(function () {
         close(function () {
@@ -371,9 +387,7 @@ function wrappedTest () {
         })
       })
     }, 120)
-
   })
-
 }
 
 wrappedTest()
@@ -388,6 +402,7 @@ test('single put with default ttl set', function (t, db, createReadStream) {
         t.equal('bar1', value)
       })
     }, 50)
+
     setTimeout(function () {
       db.get('foo', function (err, value) {
         t.ok(err, 'got error')
@@ -403,13 +418,13 @@ test('single put with default ttl set', function (t, db, createReadStream) {
 test('single put with overridden ttl set', function (t, db, createReadStream) {
   db.put('foo', 'bar1', { ttl: 99 }, function(err) {
     t.ok(!err, 'no error')
-
     setTimeout(function () {
       db.get('foo', function (err, value) {
         t.notOk(err, 'no error')
         t.equal('bar1', value)
       })
     }, 50)
+
     setTimeout(function () {
       db.get('foo', function (err, value) {
         t.ok(err, 'got error')
@@ -428,7 +443,6 @@ test('batch put with default ttl set', function (t, db, createReadStream) {
     { type: 'put', key: 'bar', value: 'foo1' }
   ], function(err) {
     t.ok(!err, 'no error')
-
     setTimeout(function () {
       db.get('foo', function (err, value) {
         t.notOk(err, 'no error')
@@ -439,6 +453,7 @@ test('batch put with default ttl set', function (t, db, createReadStream) {
         })
       })
     }, 50)
+
     setTimeout(function () {
       db.get('foo', function (err, value) {
         t.ok(err, 'got error')
@@ -471,6 +486,7 @@ test('batch put with overriden ttl set', function (t, db, createReadStream) {
         })
       })
     }, 50)
+
     setTimeout(function () {
       db.get('foo', function (err, value) {
         t.ok(err, 'got error')
@@ -495,4 +511,40 @@ ltest('without options', function (t, db, createReadStream) {
     t.notOk(err, 'no error on ttl()')
   }
   t.end()
+})
+
+ltest('data and level-sublevel ttl meta data separation', function (t, db, createReadStream) {
+  var subDb = sublevel(db)
+    , meta  = subDb.sublevel('meta')
+    , ttldb = ttl(db, { sub: meta })
+    , batch = randomPutBatch(5)
+
+  ttldb.batch(batch, { ttl: 10000 }, function (err) {
+    t.ok(!err, 'no error')
+    db2arr(createReadStream, t, function (err, arr) {
+      t.notOk(err, 'no error')
+      batch.forEach(function (item) {
+        contains(t, arr, '!meta!' + item.key, /\d{13}/)
+        contains(t, arr, new RegExp("!meta!x!\\d{13}!" + item.key), item.key)
+      })
+      t.end()
+    })
+  })
+})
+
+ltest('that level-sublevel data expires properly', function (t, db, createReadStream) {
+  var subDb = sublevel(db)
+    , meta  = subDb.sublevel('meta')
+    , ttldb = ttl(db, { checkFrequency: 50, sub: meta })
+
+  ttldb.batch(randomPutBatch(50), { ttl: 100 }, function (err) {
+    t.ok(!err, 'no error')
+    setTimeout(function () {
+      db2arr(createReadStream, t, function (err, arr) {
+        t.notOk(err, 'no error')
+        t.equal(arr.length, 0, 'should be empty array')
+        t.end()
+      })
+    }, 150)
+  })
 })

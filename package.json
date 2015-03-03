@@ -28,11 +28,13 @@
   "dependencies": {
     "after": ">=0.8.1 <0.9.0-0",
     "list-stream": ">=1.0.0 <1.1.0-0",
+    "slump": "^2.0.0",
     "xtend": ">=4.0.0 <4.1.0-0"
   },
   "peerDependencies": {},
   "devDependencies": {
     "faucet": "0.0.1",
+    "level-sublevel": "^6.4.6",
     "ltest": "2.0.0",
     "tape": ">=2.14.0 <2.15.0-0"
   },
