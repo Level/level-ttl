@@ -2,10 +2,12 @@
 
 <img alt="LevelDB Logo" height="100" src="http://leveldb.org/img/logo.svg">
 
+**Add a `'ttl'` (time-to-live) option to LevelUP for `put()` and `batch()`**
+
+[![Build Status](https://travis-ci.org/rvagg/node-level-ttl.svg?branch=master)](https://travis-ci.org/rvagg/node-level-ttl)
+
 [![NPM](https://nodei.co/npm/level-ttl.png?downloads=true&downloadRank=true)](https://nodei.co/npm/level-ttl/)
 [![NPM](https://nodei.co/npm-dl/level-ttl.png?months=6&height=3)](https://nodei.co/npm/level-ttl/)
-
-**Add a `'ttl'` (time-to-live) option to LevelUP for `put()` and `batch()`**
 
 Augment LevelUP to handle a new `'ttl'` option on `put()` and `batch()` that specifies the number of milliseconds an entry should remain in the data store. After the TTL, the entry will be automatically cleared for you.
 
