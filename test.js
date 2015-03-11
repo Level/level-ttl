@@ -13,19 +13,41 @@ function fixtape (t) {
 }
 
 function test (name, fn, opts) {
-  ltest(name, opts, function (t, _db, createReadStream) {
+  ltest(name, opts, function (t, _db, _createReadStream) {
     var db
       , close = _db.close.bind(_db) // unmolested close()
 
     fixtape(t)
 
     db = ttl(_db, xtend({ checkFrequency: 50 }, opts))
+
+    function createReadStream (opts, cb) {
+      if (db.isUpdatingTtl()) {
+        return setTimeout(function () {
+          createReadStream(opts, cb)
+        }, 10)
+      }
+      process.nextTick(function () {
+        cb(_createReadStream(opts))
+      })
+    }
+
     fn(t, db, createReadStream, close)
   })
 }
 
 function db2arr (createReadStream, t, callback, opts) {
-  createReadStream(opts)
+  createReadStream(opts, function (stream) {
+    stream.pipe(listStream.obj  (function (err, arr) {
+      if (err)
+        return t.fail(err)
+      callback(arr)
+    }))
+  })
+}
+
+function db2arrSync (_createReadStream, t, callback, opts) {
+  _createReadStream(opts)
     .pipe(listStream.obj  (function (err, arr) {
       if (err)
         return t.fail(err)
@@ -422,7 +444,7 @@ ltest('without options', function (t, db, createReadStream) {
   t.end()
 })
 
-ltest('data and level-sublevel ttl meta data separation', function (t, db, createReadStream) {
+ltest('data and level-sublevel ttl meta data separation', function (t, db, _createReadStream) {
   var subDb = sublevel(db)
     , meta  = subDb.sublevel('meta')
     , ttldb = ttl(db, { sub: meta })
@@ -430,7 +452,7 @@ ltest('data and level-sublevel ttl meta data separation', function (t, db, creat
 
   ttldb.batch(batch, { ttl: 10000 }, function (err) {
     t.ok(!err, 'no error')
-    db2arr(createReadStream, t, function (arr) {
+    db2arrSync(_createReadStream, t, function (arr) {
       batch.forEach(function (item) {
         contains(t, arr, '!meta!' + item.key, /\d{13}/)
         contains(t, arr, new RegExp("!meta!x!\\d{13}!" + item.key), item.key)
@@ -440,16 +462,18 @@ ltest('data and level-sublevel ttl meta data separation', function (t, db, creat
   })
 })
 
-ltest('that level-sublevel data expires properly', function (t, db, createReadStream) {
+ltest('that level-sublevel data expires properly', function (t, db, _createReadStream) {
   var subDb = sublevel(db)
     , meta  = subDb.sublevel('meta')
     , ttldb = ttl(db, { checkFrequency: 50, sub: meta })
 
   ttldb.batch(randomPutBatch(50), { ttl: 100 }, function (err) {
     t.ok(!err, 'no error')
-    verifyIn(200, createReadStream, t, function (arr) {
-      t.equal(arr.length, 0, 'should be empty array')
-      t.end()
-    })
+    setTimeout(function () {
+      db2arrSync(_createReadStream, t, function (arr) {
+        t.equal(arr.length, 0, 'should be empty array')
+        t.end()
+      })
+    }, 200)
   })
 })
