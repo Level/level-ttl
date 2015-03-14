@@ -16,7 +16,7 @@ function buildQuery (db) {
       keyEncoding   : 'binary'
     , valueEncoding : 'binary'
     , gte           : encode(_expiryNs)
-    , lte           : encode(_expiryNs.concat(Date.now()))
+    , lte           : encode(_expiryNs.concat(new Date()))
   }
 }
 
@@ -105,7 +105,7 @@ function stopTtl (db, callback) {
 
 function ttlon (db, keys, ttl, callback) {
   // TODO: proper dates
-  const exp   = Date.now() + ttl
+  const exp   = new Date(Date.now() + ttl)
     , batch   = []
     , sub     = db._ttl.sub
     , batchFn = (sub ? sub.batch.bind(sub) : db._ttl.batch)
@@ -268,25 +268,27 @@ function close (db, callback) {
 }
 
 function legacyEncoding (options) {
-  const SEP = options.separator
-      , INITIAL_SEP = options.sub ? '' : SEP
-      , DATE_RE = /\d{13}/
+  const PATH_SEP    = options.separator
+      , INITIAL_SEP = options.sub ? '' : PATH_SEP
+
+  function encodeElement(e) {
+    // transform dates to timestamp strings
+    return String(e instanceof Date ? +e : e)
+  }
 
   return {
       type   : 'legacy-ttl'
     , buffer : false
     , encode : function (e) {
-      if (Array.isArray(e)) {
-        // TODO: level-sublevel@6's native codec support could improve this
-        e = INITIAL_SEP + e.map(String).join(SEP)
+        // TODO: reexamine this with respect to level-sublevel@6's native codecs
+        if (Array.isArray(e))
+          return new Buffer(INITIAL_SEP + e.map(encodeElement).join(PATH_SEP))
+        return new Buffer(encodeElement(e))
       }
-
-      return new Buffer(String(e))
-    }
     , decode : function (e) {
-      // TODO: detect and parse ttl records
-      return e.toString('utf8')
-    }
+        // TODO: detect and parse ttl records
+        return e.toString('utf8')
+      }
   }
 }
 

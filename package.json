@@ -37,7 +37,7 @@
     "ltest": "2.0.0",
     "slump": "^2.0.0",
     "tape": ">=2.14.0 <2.15.0-0",
-    "bytewise": ">=0.7"
+    "bytewise": ">=0.8"
   },
   "scripts": {
     "test": "tape test.js | faucet"

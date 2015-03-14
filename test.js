@@ -4,8 +4,10 @@ const tape       = require('tape')
     , ttl        = require('./')
     , xtend      = require('xtend')
     , sublevel   = require('level-sublevel')
+    , bwSublevel = require('level-sublevel/bytewise')
     , random     = require('slump')
-    , bytewise     = require('bytewise')
+    , bytewise   = require('bytewise')
+    , bwEncode   = bytewise.encode
 
 function fixtape (t) {
   t.like = function (str, reg, msg) {
@@ -36,7 +38,7 @@ function db2arr (createReadStream, t, callback, opts) {
 
 function bufferEq (a, b) {
   if (a instanceof Buffer && b instanceof Buffer) {
-    return a.toString('hex') === b.toString('hex')  
+    return a.toString('hex') === b.toString('hex')
   }
 }
 
@@ -60,11 +62,21 @@ function matchRange (range, buffer) {
   return match
 }
 
+function bwRange (prefix, resolution) {
+  const now = Date.now()
+      , min = new Date(resolution ? now - resolution : 0)
+      , max = new Date(resolution ? now + resolution : 9999999999999)
+  return {
+      gte : bwEncode(prefix ? prefix.concat(min) : min)
+    , lte : bwEncode(prefix ? prefix.concat(max) : max)
+  }
+}
+
 function formatRecord (key, value) {
   if (isRange(key))
-      key.source = '[object Range]'
+    key.source = '[object KeyRange]'
   if (isRange(value))
-      value.source = '[object Range]'
+    value.source = '[object ValueRange]'
   return '{' + (key.source || key) + ', ' + (value.source || value) + '}'
 }
 
@@ -94,8 +106,8 @@ function contains (t, arr, key, value) {
 function randomPutBatch (length) {
   var batch     = []
     , randomize = function () {
-      return random.string({ enc: 'base58', length: 10 })
-    }
+        return random.string({ enc: 'base58', length: 10 })
+      }
   for (var i = 0; i < length; ++i) {
     batch.push({ type: 'put', key: randomize(), value: randomize() })
   }
@@ -106,13 +118,6 @@ function verifyIn (delay, createReadStream, t, cb, opts) {
   setTimeout(function () {
     db2arr(createReadStream, t, cb, opts)
   }, delay)
-}
-
-function bytewiseRange(prefix) {
-  return {
-      gt : bytewise.encode(prefix ? prefix.concat(-Infinity) : -Infinity)
-    , lt : bytewise.encode(prefix ? prefix.concat(Infinity) : Infinity)
-  }
 }
 
 test('single ttl entry', function (t, db) {
@@ -148,8 +153,8 @@ test('single ttl entry with put (custom ttlEncoding)', function (t, db, createRe
     db.put('bar', 'barvalue', { ttl: 100 }, function (err) {
       t.notOk(err, 'no error')
       db2arr(createReadStream, t, function (arr) {
-        contains(t, arr, bytewiseRange([ 'ttl', 'x' ]), bytewise.encode('bar'))
-        contains(t, arr, bytewise.encode([ 'ttl', 'bar' ]), bytewiseRange())
+        contains(t, arr, bwRange([ 'ttl', 'x' ]), bwEncode('bar'))
+        contains(t, arr, bwEncode([ 'ttl', 'bar' ]), bwRange())
         contains(t, arr, new Buffer('bar'), new Buffer('barvalue'))
         contains(t, arr, new Buffer('foo'), new Buffer('foovalue'))
 
@@ -206,18 +211,18 @@ test('multiple ttl entries with put (custom ttlEncoding)', function (t, db, crea
           contains(t, arr, new Buffer('afoo'), new Buffer('foovalue'))
           if (keys >= 1) {
             contains(t, arr, new Buffer('bar1'), new Buffer('barvalue1'))
-            contains(t, arr, bytewiseRange([ 'ttl', 'x' ]), bytewise.encode('bar1'))
-            contains(t, arr, bytewise.encode([ 'ttl', 'bar1' ]), bytewiseRange())
+            contains(t, arr, bwRange([ 'ttl', 'x' ]), bwEncode('bar1'))
+            contains(t, arr, bwEncode([ 'ttl', 'bar1' ]), bwRange())
           }
           if (keys >= 2) {
             contains(t, arr, new Buffer('bar2'), new Buffer('barvalue2'))
-            contains(t, arr, bytewiseRange([ 'ttl', 'x' ]), bytewise.encode('bar2'))
-            contains(t, arr, bytewise.encode([ 'ttl', 'bar2' ]), bytewiseRange())
+            contains(t, arr, bwRange([ 'ttl', 'x' ]), bwEncode('bar2'))
+            contains(t, arr, bwEncode([ 'ttl', 'bar2' ]), bwRange())
           }
           if (keys >= 3) {
             contains(t, arr, new Buffer('bar3'), new Buffer('barvalue3'))
-            contains(t, arr, bytewiseRange([ 'ttl', 'x' ]), bytewise.encode('bar3'))
-            contains(t, arr, bytewise.encode([ 'ttl', 'bar3' ]), bytewiseRange())
+            contains(t, arr, bwRange([ 'ttl', 'x' ]), bwEncode('bar3'))
+            contains(t, arr, bwEncode([ 'ttl', 'bar3' ]), bwRange())
           }
           cb && cb()
         }, { keyEncoding: 'binary', valueEncoding: 'binary' })
@@ -283,23 +288,23 @@ test('multiple ttl entries with batch-put (custom ttlEncoding)', function (t, db
           contains(t, arr, new Buffer('afoo'), new Buffer('foovalue'))
           if (keys >= 1) {
             contains(t, arr, new Buffer('bar1'), new Buffer('barvalue1'))
-            contains(t, arr, bytewiseRange([ 'ttl', 'x' ]), bytewise.encode('bar1'))
-            contains(t, arr, bytewise.encode([ 'ttl', 'bar1' ]), bytewiseRange())
+            contains(t, arr, bwRange([ 'ttl', 'x' ]), bwEncode('bar1'))
+            contains(t, arr, bwEncode([ 'ttl', 'bar1' ]), bwRange())
           }
           if (keys >= 2) {
             contains(t, arr, new Buffer('bar2'), new Buffer('barvalue2'))
-            contains(t, arr, bytewiseRange([ 'ttl', 'x' ]), bytewise.encode('bar2'))
-            contains(t, arr, bytewise.encode([ 'ttl', 'bar2' ]), bytewiseRange())
+            contains(t, arr, bwRange([ 'ttl', 'x' ]), bwEncode('bar2'))
+            contains(t, arr, bwEncode([ 'ttl', 'bar2' ]), bwRange())
           }
           if (keys >= 3) {
             contains(t, arr, new Buffer('bar3'), new Buffer('barvalue3'))
-            contains(t, arr, bytewiseRange([ 'ttl', 'x' ]), bytewise.encode('bar3'))
-            contains(t, arr, bytewise.encode([ 'ttl', 'bar3' ]), bytewiseRange())
+            contains(t, arr, bwRange([ 'ttl', 'x' ]), bwEncode('bar3'))
+            contains(t, arr, bwEncode([ 'ttl', 'bar3' ]), bwRange())
           }
           if (keys >= 3) {
             contains(t, arr, new Buffer('bar4'), new Buffer('barvalue4'))
-            contains(t, arr, bytewiseRange([ 'ttl', 'x' ]), bytewise.encode('bar4'))
-            contains(t, arr, bytewise.encode([ 'ttl', 'bar4' ]), bytewiseRange())
+            contains(t, arr, bwRange([ 'ttl', 'x' ]), bwEncode('bar4'))
+            contains(t, arr, bwEncode([ 'ttl', 'bar4' ]), bwRange())
           }
           cb && cb()
         }, { keyEncoding: 'binary', valueEncoding: 'binary' })
@@ -346,8 +351,8 @@ test('prolong entry life with additional put (custom ttlEncoding)', function (t,
           verifyIn(80, createReadStream, t, function (arr) {
             contains(t, arr, new Buffer('foo'), new Buffer('foovalue'))
             contains(t, arr, new Buffer('bar'), new Buffer('barvalue'))
-            contains(t, arr, bytewiseRange([ 'ttl', 'x' ]), bytewise.encode('bar'))
-            contains(t, arr, bytewise.encode([ 'ttl', 'bar' ]), bytewiseRange())
+            contains(t, arr, bwRange([ 'ttl', 'x' ]), bwEncode('bar'))
+            contains(t, arr, bwEncode([ 'ttl', 'bar' ]), bwRange())
             cb && cb()
           }, { keyEncoding: 'binary', valueEncoding: 'binary' })
         }, delay)
@@ -389,8 +394,8 @@ test('prolong entry life with ttl(key, ttl) (custom ttlEncoding)', function (t, 
           verifyIn(25, createReadStream, t, function (arr) {
             contains(t, arr, new Buffer('bar'), new Buffer('barvalue'))
             contains(t, arr, new Buffer('foo'), new Buffer('foovalue'))
-            contains(t, arr, bytewiseRange([ 'ttl', 'x' ]), bytewise.encode('bar'))
-            contains(t, arr, bytewise.encode([ 'ttl', 'bar' ]), bytewiseRange())
+            contains(t, arr, bwRange([ 'ttl', 'x' ]), bwEncode('bar'))
+            contains(t, arr, bwEncode([ 'ttl', 'bar' ]), bwRange())
             cb && cb()
           }, { keyEncoding: 'binary', valueEncoding: 'binary' })
         }, delay)
@@ -458,8 +463,8 @@ test('del removes both key and its ttl meta data (custom ttlEncoding)', function
   verifyIn(50, createReadStream, t, function (arr) {
     contains(t, arr, new Buffer('foo'), new Buffer('{"v":"foovalue"}'))
     contains(t, arr, new Buffer('bar'), new Buffer('{"v":"barvalue"}'))
-    contains(t, arr, bytewiseRange([ 'ttl', 'x' ]), bytewise.encode('bar'))
-    contains(t, arr, bytewise.encode([ 'ttl', 'bar' ]), bytewiseRange())
+    contains(t, arr, bwRange([ 'ttl', 'x' ]), bwEncode('bar'))
+    contains(t, arr, bwEncode([ 'ttl', 'bar' ]), bwRange())
   }, { keyEncoding: 'binary', valueEncoding: 'binary' })
 
   setTimeout(function () {
@@ -694,28 +699,52 @@ ltest('data and level-sublevel ttl meta data separation', function (t, db, creat
 })
 
 ltest('data and level-sublevel ttl meta data separation (custom ttlEncoding)', function (t, db, createReadStream) {
-  var subDb = sublevel(db)
-    , meta  = subDb.sublevel('meta')
-    , ttldb = ttl(db, { sub: meta, ttlEncoding: bytewise })
-    , batch = randomPutBatch(5)
+  var subDb  = sublevel(db)
+    , meta   = subDb.sublevel('meta')
+    , ttldb  = ttl(db, { sub: meta, ttlEncoding: bytewise })
+    , batch  = randomPutBatch(5)
 
   ttldb.batch(batch, { ttl: 10000 }, function (err) {
     t.ok(!err, 'no error')
     db2arr(createReadStream, t, function (arr) {
       batch.forEach(function (item) {
-        // TODO
-        // contains(t, arr, '!meta!' + item.key, /\d{13}/)
-        // contains(t, arr, new RegExp("!meta!x!\\d{13}!" + item.key), item.key)
+        contains(t, arr, '!meta!' + bwEncode([ item.key ]), bwRange())
+        contains(t, arr, {
+            gt: '!meta!' + bwEncode([ 'x', new Date(0), item.key ])
+          , lt: '!meta!' + bwEncode([ 'x', new Date(9999999999999), item.key ])
+        }, bwEncode(item.key))
       })
       t.end()
-    })
+    }, { valueEncoding: 'binary' })
   })
 })
 
-function testSubLevelDataExpiration (t, db, createReadStream) {
+ltest('data and level-sublevel ttl meta data separation (custom sublevel encoding)', function (t, db, createReadStream) {
+  var subDb  = bwSublevel(db)
+    , meta   = subDb.sublevel('meta')
+    , ttldb  = ttl(db, { sub: meta, ttlEncoding: bytewise })
+    , batch  = randomPutBatch(5)
+
+  ttldb.batch(batch, { ttl: 10000 }, function (err) {
+    t.ok(!err, 'no error')
+    db2arr(createReadStream, t, function (arr) {
+      batch.forEach(function (item) {
+        // bytewise keys in bytewise sublevels are double-encoded for now
+        contains(t, arr, bwEncode([ [ 'meta' ], bwEncode([ item.key ]) ]), bwRange())
+        contains(t, arr, {
+            gt: bwEncode([ [ 'meta' ], bwEncode([ 'x', new Date(0), item.key ]) ])
+          , lt: bwEncode([ [ 'meta' ], bwEncode([ 'x', new Date(9999999999999), item.key ]) ])
+        }, bwEncode(item.key))
+      })
+      t.end()
+    }, { keyEncoding: 'binary', valueEncoding: 'binary' })
+  })
+})
+
+ltest('that level-sublevel data expires properly', function (t, db, createReadStream) {
   var subDb = sublevel(db)
     , meta  = subDb.sublevel('meta')
-    , ttldb = ttl(db, { checkFrequency: 50, sub: meta })
+    , ttldb = ttl(db, { checkFrequency: 25, sub: meta })
 
   ttldb.batch(randomPutBatch(50), { ttl: 100 }, function (err) {
     t.ok(!err, 'no error')
@@ -724,8 +753,18 @@ function testSubLevelDataExpiration (t, db, createReadStream) {
       t.end()
     })
   })
-}
+})
 
-ltest('that level-sublevel data expires properly'
-  , testSubLevelDataExpiration
-)
+ltest('that level-sublevel data expires properly (custom ttlEncoding)', function (t, db, createReadStream) {
+  var subDb = sublevel(db)
+    , meta  = subDb.sublevel('meta')
+    , ttldb = ttl(db, { checkFrequency: 25, sub: meta, ttlEncoding: bytewise })
+
+  ttldb.batch(randomPutBatch(50), { ttl: 100 }, function (err) {
+    t.ok(!err, 'no error')
+    verifyIn(200, createReadStream, t, function (arr) {
+      t.equal(arr.length, 0, 'should be empty array')
+      t.end()
+    })
+  })
+})
