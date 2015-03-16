@@ -327,7 +327,7 @@ test('prolong entry life with additional put', function (t, db, createReadStream
   var retest = function (delay, cb) {
         setTimeout(function () {
           db.put('bar', 'barvalue', { ttl: 250 })
-          verifyIn(80, createReadStream, t, function (arr) {
+          verifyIn(50, createReadStream, t, function (arr) {
             contains(t, arr, 'foo', 'foovalue')
             contains(t, arr, 'bar', 'barvalue')
             contains(t, arr, /!ttl!x!\d{13}!bar/, 'bar')
@@ -348,7 +348,7 @@ test('prolong entry life with additional put (custom ttlEncoding)', function (t,
   var retest = function (delay, cb) {
         setTimeout(function () {
           db.put('bar', 'barvalue', { ttl: 250 })
-          verifyIn(80, createReadStream, t, function (arr) {
+          verifyIn(50, createReadStream, t, function (arr) {
             contains(t, arr, new Buffer('foo'), new Buffer('foovalue'))
             contains(t, arr, new Buffer('bar'), new Buffer('barvalue'))
             contains(t, arr, bwRange([ 'ttl', 'x' ]), bwEncode('bar'))
@@ -699,10 +699,10 @@ ltest('data and level-sublevel ttl meta data separation', function (t, db, creat
 })
 
 ltest('data and level-sublevel ttl meta data separation (custom ttlEncoding)', function (t, db, createReadStream) {
-  var subDb  = sublevel(db)
-    , meta   = subDb.sublevel('meta')
-    , ttldb  = ttl(db, { sub: meta, ttlEncoding: bytewise })
-    , batch  = randomPutBatch(5)
+  var subDb = sublevel(db)
+    , meta  = subDb.sublevel('meta')
+    , ttldb = ttl(db, { sub: meta, ttlEncoding: bytewise })
+    , batch = randomPutBatch(5)
 
   ttldb.batch(batch, { ttl: 10000 }, function (err) {
     t.ok(!err, 'no error')

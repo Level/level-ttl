@@ -1,5 +1,6 @@
 const after = require('after')
     , xtend = require('xtend')
+    , encoding = require('./encoding')
 
 function prefixKey (db, key) {
   return db._ttl.encoding.encode(db._ttl._prefixNs.concat(key))
@@ -267,31 +268,6 @@ function close (db, callback) {
   })
 }
 
-function legacyEncoding (options) {
-  const PATH_SEP    = options.separator
-      , INITIAL_SEP = options.sub ? '' : PATH_SEP
-
-  function encodeElement(e) {
-    // transform dates to timestamp strings
-    return String(e instanceof Date ? +e : e)
-  }
-
-  return {
-      type   : 'legacy-ttl'
-    , buffer : false
-    , encode : function (e) {
-        // TODO: reexamine this with respect to level-sublevel@6's native codecs
-        if (Array.isArray(e))
-          return new Buffer(INITIAL_SEP + e.map(encodeElement).join(PATH_SEP))
-        return new Buffer(encodeElement(e))
-      }
-    , decode : function (e) {
-        // TODO: detect and parse ttl records
-        return e.toString('utf8')
-      }
-  }
-}
-
 function setup (db, options) {
   if (db._ttl)
     return
@@ -316,7 +292,7 @@ function setup (db, options) {
     , close     : db.close.bind(db)
     , sub       : options.sub
     , options   : options
-    , encoding  : options.ttlEncoding || legacyEncoding(options)
+    , encoding  : encoding.create(options)
     , _prefixNs : _prefixNs
     , _expiryNs : _prefixNs.concat(options.expiryNamespace)
   }
