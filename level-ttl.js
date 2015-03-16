@@ -1,5 +1,5 @@
-const after = require('after')
-    , xtend = require('xtend')
+const after    = require('after')
+    , xtend    = require('xtend')
     , encoding = require('./encoding')
 
 function prefixKey (db, key) {
