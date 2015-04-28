@@ -6,18 +6,10 @@ const tape       = require('tape')
     , sublevel   = require('level-sublevel')
     , random     = require('slump')
 
-function fixtape (t) {
-  t.like = function (str, reg, msg) {
-    t.ok(reg.test(str), msg)
-  }
-}
-
 function test (name, fn, opts) {
   ltest(name, opts, function (t, _db, createReadStream) {
     var db
       , close = _db.close.bind(_db) // unmolested close()
-
-    fixtape(t)
 
     db = ttl(_db, xtend({ checkFrequency: 50 }, opts))
     fn(t, db, createReadStream, close)
