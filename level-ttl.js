@@ -57,11 +57,14 @@ function startTtl (db, checkFrequency) {
         if (!batch.length)
           return
 
+        pushUpdatingTtl(db)
+
         if (sub) {
           sub.batch(
               subBatch
             , { keyEncoding: 'utf8' }
             , function (err) {
+                popUpdatingTtl(db)
                 if (err)
                   db.emit('error', err)
               }
@@ -81,6 +84,7 @@ function startTtl (db, checkFrequency) {
               subBatch.concat(batch)
             , { keyEncoding: 'utf8' }
             , function (err) {
+                popUpdatingTtl(db)
                 if (err)
                   db.emit('error', err)
               }
@@ -118,6 +122,8 @@ function ttlon (db, keys, ttl, callback) {
   if (!Array.isArray(keys))
     keys = [ keys ]
 
+  pushUpdatingTtl(db)
+
   ttloff(db, keys, function () {
     keys.forEach(function (key) {
       if (typeof key != 'string')
@@ -126,13 +132,16 @@ function ttlon (db, keys, ttl, callback) {
       batch.push({ type: 'put', key: prefix(db) + key, value: exp })
     })
 
-    if (!batch.length)
+    if (!batch.length) {
+      popUpdatingTtl(db)
       return callback && callback()
+    }
 
     batchFn(
         batch
       , { keyEncoding: 'utf8', valueEncoding: 'utf8' }
       , function (err) {
+          popUpdatingTtl(db)
           if (err)
             db.emit('error', err)
           callback && callback()
@@ -156,10 +165,13 @@ function ttloff (db, keys, callback) {
         if (!batch.length)
           return callback && callback()
 
+        pushUpdatingTtl(db)
+
         batchFn(
             batch
           , { keyEncoding: 'utf8', valueEncoding: 'utf8' }
           , function (err) {
+              popUpdatingTtl(db)
               if (err)
                 db.emit('error', err)
               callback && callback()
@@ -262,6 +274,8 @@ function batch (db, arr, options, callback) {
         off.push(entry.key)
     })
 
+    pushUpdatingTtl(db)
+
     if (on.length)
       ttlon(db, on, options.ttl, done)
     else
@@ -270,6 +284,8 @@ function batch (db, arr, options, callback) {
       ttloff(db, off, done)
     else
       done()
+
+    popUpdatingTtl(db)
   }
 
   db._ttl.batch.call(db, arr, options, callback)
@@ -281,6 +297,18 @@ function close (db, callback) {
       return db._ttl.close.call(db, callback)
     callback && callback()
   })
+}
+
+function pushUpdatingTtl (db) {
+  ++db._ttl.updating
+}
+
+function popUpdatingTtl (db) {
+  --db._ttl.updating
+}
+
+function isUpdatingTtl (db) {
+  return db._ttl.updating > 0
 }
 
 function setup (db, options) {
@@ -298,19 +326,21 @@ function setup (db, options) {
   }, options)
 
   db._ttl = {
-      put     : db.put.bind(db)
-    , del     : db.del.bind(db)
-    , batch   : db.batch.bind(db)
-    , close   : db.close.bind(db)
-    , sub     : options.sub
-    , options : options
+      put      : db.put.bind(db)
+    , del      : db.del.bind(db)
+    , batch    : db.batch.bind(db)
+    , close    : db.close.bind(db)
+    , sub      : options.sub
+    , options  : options
+    , updating : 0
   }
 
-  db[options.methodPrefix + 'put']   = put.bind(null, db)
-  db[options.methodPrefix + 'del']   = del.bind(null, db)
-  db[options.methodPrefix + 'batch'] = batch.bind(null, db)
-  db[options.methodPrefix + 'ttl']   = ttl.bind(null, db)
-  db[options.methodPrefix + 'stop']  = stopTtl.bind(null, db)
+  db[options.methodPrefix + 'put']           = put.bind(null, db)
+  db[options.methodPrefix + 'del']           = del.bind(null, db)
+  db[options.methodPrefix + 'batch']         = batch.bind(null, db)
+  db[options.methodPrefix + 'ttl']           = ttl.bind(null, db)
+  db[options.methodPrefix + 'stop']          = stopTtl.bind(null, db)
+  db[options.methodPrefix + 'isUpdatingTtl'] = isUpdatingTtl.bind(null, db)
   // we must intercept close()
   db.close                           = close.bind(null, db)
 
