@@ -105,12 +105,11 @@ function stopTtl (db, callback) {
 }
 
 function ttlon (db, keys, ttl, callback) {
-  // TODO: proper dates
   const exp   = new Date(Date.now() + ttl)
-    , batch   = []
-    , sub     = db._ttl.sub
-    , batchFn = (sub ? sub.batch.bind(sub) : db._ttl.batch)
-    , encode  = db._ttl.encoding.encode
+      , batch   = []
+      , sub     = db._ttl.sub
+      , batchFn = (sub ? sub.batch.bind(sub) : db._ttl.batch)
+      , encode  = db._ttl.encoding.encode
 
   ttloff(db, keys, function () {
     keys.forEach(function (key) {
