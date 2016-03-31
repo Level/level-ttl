@@ -760,3 +760,25 @@ ltest('that level-sublevel data expires properly (custom ttlEncoding)', function
     })
   })
 })
+
+test('prolong entry with PUT should not duplicate the TTL key', function (t, db, createReadStream) {
+  var retest = function (delay, cb) {
+        setTimeout(function () {
+          db.put('bar', 'barvalue', { ttl: 20 })
+          verifyIn(50, createReadStream, t, function (arr) {
+            var count = arr.filter(function (kv) {
+              return /!ttl!x!\d{13}!bar/.exec(kv.key);
+            }).length
+
+            t.ok(count <= 1, 'contains one or zero TTL entry')
+            cb && cb()
+          })
+        }, delay)
+      }
+    , i
+
+  db.put('foo', 'foovalue')
+  for (i = 0; i < 50; i++)
+    retest(i)
+  retest(50, t.end.bind(t))
+}, { checkFrequency: 5 })

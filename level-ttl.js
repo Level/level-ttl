@@ -1,6 +1,7 @@
 const after    = require('after')
     , xtend    = require('xtend')
     , encoding = require('./encoding')
+    , Lock     = require('lock')
 
 function prefixKey (db, key) {
   return db._ttl.encoding.encode(db._ttl._prefixNs.concat(key))
@@ -111,24 +112,28 @@ function ttlon (db, keys, ttl, callback) {
       , batchFn = (sub ? sub.batch.bind(sub) : db._ttl.batch)
       , encode  = db._ttl.encoding.encode
 
-  ttloff(db, keys, function () {
-    keys.forEach(function (key) {
-      batch.push({ type: 'put', key: expiryKey(db, exp, key), value: encode(key) })
-      batch.push({ type: 'put', key: prefixKey(db, key), value: encode(exp) })
+  db._ttl._lock(keys, function (release) {
+    callback = release(callback || function () {})
+    ttloff(db, keys, function () {
+      keys.forEach(function (key) {
+        batch.push({ type: 'put', key: expiryKey(db, exp, key), value: encode(key) })
+        batch.push({ type: 'put', key: prefixKey(db, key), value: encode(exp) })
+      })
+
+      if (!batch.length){
+        return callback()
+      }
+
+      batchFn(
+          batch
+        , { keyEncoding: 'binary', valueEncoding: 'binary' }
+        , function (err) {
+            if (err)
+              db.emit('error', err)
+            callback()
+          }
+      )
     })
-
-    if (!batch.length)
-      return callback && callback()
-
-    batchFn(
-        batch
-      , { keyEncoding: 'binary', valueEncoding: 'binary' }
-      , function (err) {
-          if (err)
-            db.emit('error', err)
-          callback && callback()
-        }
-    )
   })
 }
 
@@ -294,6 +299,7 @@ function setup (db, options) {
     , encoding  : encoding.create(options)
     , _prefixNs : _prefixNs
     , _expiryNs : _prefixNs.concat(options.expiryNamespace)
+    , _lock     : new Lock()
   }
 
   db[options.methodPrefix + 'put']   = put.bind(null, db)
