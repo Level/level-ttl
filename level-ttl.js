@@ -120,9 +120,8 @@ function ttlon (db, keys, ttl, callback) {
         batch.push({ type: 'put', key: prefixKey(db, key), value: encode(exp) })
       })
 
-      if (!batch.length){
+      if (!batch.length)
         return callback()
-      }
 
       batchFn(
           batch
