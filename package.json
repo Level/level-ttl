@@ -37,7 +37,7 @@
     "level-sublevel": "^6.4.6",
     "ltest": "^2.1.1",
     "slump": "^2.0.0",
-    "tape": "^4.3.0",
+    "tape": "^4.6.3",
     "bytewise": ">=0.8"
   },
   "scripts": {
