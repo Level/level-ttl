@@ -33,7 +33,7 @@
   "peerDependencies": {},
   "devDependencies": {
     "faucet": "0.0.1",
-    "level-sublevel": "^6.4.6",
+    "level-sublevel": "^6.6.1",
     "ltest": "^2.1.1",
     "slump": "^2.0.0",
     "tape": "^4.3.0",
