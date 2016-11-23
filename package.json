@@ -17,8 +17,7 @@
     "leveldb",
     "levelup",
     "level",
-    "ttl",
-    "whoa dude!"
+    "ttl"
   ],
   "main": "./level-ttl.js",
   "repository": {
