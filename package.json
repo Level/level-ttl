@@ -1,13 +1,6 @@
 {
   "name": "level-ttl",
   "description": "Adds a 'ttl' option to LevelUP for puts and batches",
-  "contributors": [
-    "Rod Vagg <r@va.gg> (https://github.com/rvagg)",
-    "Matteo Collina <matteo.collina@gmail.com> (https://github.com/mcollina)",
-    "Josh Duff <me@JoshDuff.com> (https://github.com/TehShrike)",
-    "Erik Kristensen <erik@erikkristensen.com> (https://github.com/ekristen)",
-    "Lars-Magnus Skog <ralphtheninja@riseup.net> (https://github.com/ralphtheninja)"
-  ],
   "version": "3.1.1",
   "homepage": "https://github.com/level/level-ttl",
   "authors": [
