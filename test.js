@@ -605,6 +605,7 @@ function testBatchPutWithTtlOverride (t, db, createReadStream) {
     { type: 'put', key: 'foo', value: 'foovalue' },
     { type: 'put', key: 'bar', value: 'barvalue' }
   ], { ttl: 99 }, function (err) {
+    t.error(err, 'no error')
     setTimeout(function () {
       db.get('foo', function (err, value) {
         t.notOk(err, 'no error')
