@@ -78,8 +78,8 @@ function formatRecord (key, value) {
 
 function contains (t, arr, key, value) {
   for (var i = 0; i < arr.length; i++) {
-    if (typeof key === 'string' && arr[i].key != key) continue
-    if (typeof value === 'string' && arr[i].value != value) continue
+    if (typeof key === 'string' && arr[i].key !== key) continue
+    if (typeof value === 'string' && arr[i].value !== value) continue
     if (key instanceof RegExp && !key.test(arr[i].key)) continue
     if (value instanceof RegExp && !value.test(arr[i].value)) continue
     if (key instanceof Buffer && !bufferEq(key, arr[i].key)) continue

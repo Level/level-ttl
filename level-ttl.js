@@ -140,7 +140,7 @@ function ttloff (db, keys, callback) {
         batch.push({ type: 'del', key: expiryKey(db, decode(exp), key) })
         batch.push({ type: 'del', key: prefixedKey })
       }
-      done(err && err.name != 'NotFoundError' && err)
+      done(err && err.name !== 'NotFoundError' && err)
     })
   })
 }
@@ -153,7 +153,7 @@ function put (db, key, value, options, callback) {
 
   options || (options = {})
 
-  if (db._ttl.options.defaultTTL > 0 && !options.ttl && options.ttl != 0) {
+  if (db._ttl.options.defaultTTL > 0 && !options.ttl && options.ttl !== 0) {
     options.ttl = db._ttl.options.defaultTTL
   }
 
@@ -196,7 +196,7 @@ function batch (db, arr, options, callback) {
 
   options || (options = {})
 
-  if (db._ttl.options.defaultTTL > 0 && !options.ttl && options.ttl != 0) {
+  if (db._ttl.options.defaultTTL > 0 && !options.ttl && options.ttl !== 0) {
     options.ttl = db._ttl.options.defaultTTL
   }
 
@@ -214,8 +214,8 @@ function batch (db, arr, options, callback) {
     arr.forEach(function (entry) {
       if (!entry || entry.key == null) { return }
 
-      if (entry.type == 'put' && entry.value != null) { on.push(entry.key) }
-      if (entry.type == 'del') { off.push(entry.key) }
+      if (entry.type === 'put' && entry.value != null) on.push(entry.key)
+      if (entry.type === 'del') off.push(entry.key)
     })
 
     if (on.length) {
