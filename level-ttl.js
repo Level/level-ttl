@@ -85,7 +85,8 @@ function stopTtl (db, callback) {
   // can't close a db while an interator is in progress
   // so if one is, defer
   if (db._ttl._checkInProgress) {
-    return db._ttl._stopAfterCheck = callback
+    db._ttl._stopAfterCheck = callback
+    return db._ttl._stopAfterCheck
   }
   clearInterval(db._ttl.intervalId)
   callback && callback()
