@@ -143,8 +143,8 @@ test('single ttl entry with put (custom ttlEncoding)', function (t, db, createRe
       db2arr(createReadStream, t, function (arr) {
         contains(t, arr, bwRange([ 'ttl', 'x' ]), bwEncode('bar'))
         contains(t, arr, bwEncode([ 'ttl', 'bar' ]), bwRange())
-        contains(t, arr, new Buffer('bar'), new Buffer('barvalue'))
-        contains(t, arr, new Buffer('foo'), new Buffer('foovalue'))
+        contains(t, arr, Buffer.from('bar'), Buffer.from('barvalue'))
+        contains(t, arr, Buffer.from('foo'), Buffer.from('foovalue'))
 
         verifyIn(150, createReadStream, t, function (arr) {
           t.deepEqual(arr, [
@@ -196,19 +196,19 @@ test('multiple ttl entries with put (custom ttlEncoding)', function (t, db, crea
   var expect = function (delay, keys, cb) {
     verifyIn(delay, createReadStream, t, function (arr) {
       t.equal(arr.length, 1 + keys * 3, 'correct number of entries in db')
-      contains(t, arr, new Buffer('afoo'), new Buffer('foovalue'))
+      contains(t, arr, Buffer.from('afoo'), Buffer.from('foovalue'))
       if (keys >= 1) {
-        contains(t, arr, new Buffer('bar1'), new Buffer('barvalue1'))
+        contains(t, arr, Buffer.from('bar1'), Buffer.from('barvalue1'))
         contains(t, arr, bwRange([ 'ttl', 'x' ]), bwEncode('bar1'))
         contains(t, arr, bwEncode([ 'ttl', 'bar1' ]), bwRange())
       }
       if (keys >= 2) {
-        contains(t, arr, new Buffer('bar2'), new Buffer('barvalue2'))
+        contains(t, arr, Buffer.from('bar2'), Buffer.from('barvalue2'))
         contains(t, arr, bwRange([ 'ttl', 'x' ]), bwEncode('bar2'))
         contains(t, arr, bwEncode([ 'ttl', 'bar2' ]), bwRange())
       }
       if (keys >= 3) {
-        contains(t, arr, new Buffer('bar3'), new Buffer('barvalue3'))
+        contains(t, arr, Buffer.from('bar3'), Buffer.from('barvalue3'))
         contains(t, arr, bwRange([ 'ttl', 'x' ]), bwEncode('bar3'))
         contains(t, arr, bwEncode([ 'ttl', 'bar3' ]), bwRange())
       }
@@ -273,24 +273,24 @@ test('multiple ttl entries with batch-put (custom ttlEncoding)', function (t, db
   var expect = function (delay, keys, cb) {
     verifyIn(delay, createReadStream, t, function (arr) {
       t.equal(arr.length, 1 + keys * 3, 'correct number of entries in db')
-      contains(t, arr, new Buffer('afoo'), new Buffer('foovalue'))
+      contains(t, arr, Buffer.from('afoo'), Buffer.from('foovalue'))
       if (keys >= 1) {
-        contains(t, arr, new Buffer('bar1'), new Buffer('barvalue1'))
+        contains(t, arr, Buffer.from('bar1'), Buffer.from('barvalue1'))
         contains(t, arr, bwRange([ 'ttl', 'x' ]), bwEncode('bar1'))
         contains(t, arr, bwEncode([ 'ttl', 'bar1' ]), bwRange())
       }
       if (keys >= 2) {
-        contains(t, arr, new Buffer('bar2'), new Buffer('barvalue2'))
+        contains(t, arr, Buffer.from('bar2'), Buffer.from('barvalue2'))
         contains(t, arr, bwRange([ 'ttl', 'x' ]), bwEncode('bar2'))
         contains(t, arr, bwEncode([ 'ttl', 'bar2' ]), bwRange())
       }
       if (keys >= 3) {
-        contains(t, arr, new Buffer('bar3'), new Buffer('barvalue3'))
+        contains(t, arr, Buffer.from('bar3'), Buffer.from('barvalue3'))
         contains(t, arr, bwRange([ 'ttl', 'x' ]), bwEncode('bar3'))
         contains(t, arr, bwEncode([ 'ttl', 'bar3' ]), bwRange())
       }
       if (keys >= 3) {
-        contains(t, arr, new Buffer('bar4'), new Buffer('barvalue4'))
+        contains(t, arr, Buffer.from('bar4'), Buffer.from('barvalue4'))
         contains(t, arr, bwRange([ 'ttl', 'x' ]), bwEncode('bar4'))
         contains(t, arr, bwEncode([ 'ttl', 'bar4' ]), bwRange())
       }
@@ -336,8 +336,8 @@ test('prolong entry life with additional put (custom ttlEncoding)', function (t,
       setTimeout(function () {
         db.put('bar', 'barvalue', { ttl: 250 })
         verifyIn(50, createReadStream, t, function (arr) {
-          contains(t, arr, new Buffer('foo'), new Buffer('foovalue'))
-          contains(t, arr, new Buffer('bar'), new Buffer('barvalue'))
+          contains(t, arr, Buffer.from('foo'), Buffer.from('foovalue'))
+          contains(t, arr, Buffer.from('bar'), Buffer.from('barvalue'))
           contains(t, arr, bwRange([ 'ttl', 'x' ]), bwEncode('bar'))
           contains(t, arr, bwEncode([ 'ttl', 'bar' ]), bwRange())
           cb && cb()
@@ -377,8 +377,8 @@ test('prolong entry life with ttl(key, ttl) (custom ttlEncoding)', function (t, 
       setTimeout(function () {
         db.ttl('bar', 250)
         verifyIn(25, createReadStream, t, function (arr) {
-          contains(t, arr, new Buffer('bar'), new Buffer('barvalue'))
-          contains(t, arr, new Buffer('foo'), new Buffer('foovalue'))
+          contains(t, arr, Buffer.from('bar'), Buffer.from('barvalue'))
+          contains(t, arr, Buffer.from('foo'), Buffer.from('foovalue'))
           contains(t, arr, bwRange([ 'ttl', 'x' ]), bwEncode('bar'))
           contains(t, arr, bwEncode([ 'ttl', 'bar' ]), bwRange())
           cb && cb()
@@ -444,8 +444,8 @@ test('del removes both key and its ttl meta data (custom ttlEncoding)', function
   db.put('bar', { v: 'barvalue' }, { ttl: 250 })
 
   verifyIn(50, createReadStream, t, function (arr) {
-    contains(t, arr, new Buffer('foo'), new Buffer('{"v":"foovalue"}'))
-    contains(t, arr, new Buffer('bar'), new Buffer('{"v":"barvalue"}'))
+    contains(t, arr, Buffer.from('foo'), Buffer.from('{"v":"foovalue"}'))
+    contains(t, arr, Buffer.from('bar'), Buffer.from('{"v":"barvalue"}'))
     contains(t, arr, bwRange([ 'ttl', 'x' ]), bwEncode('bar'))
     contains(t, arr, bwEncode([ 'ttl', 'bar' ]), bwRange())
   }, { keyEncoding: 'binary', valueEncoding: 'binary' })

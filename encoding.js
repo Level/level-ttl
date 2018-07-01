@@ -16,9 +16,9 @@ exports.create = function createEncoding (options) {
     encode: function (e) {
       // TODO: reexamine this with respect to level-sublevel@6's native codecs
       if (Array.isArray(e)) {
-        return new Buffer(INITIAL_SEP + e.map(encodeElement).join(PATH_SEP))
+        return Buffer.from(INITIAL_SEP + e.map(encodeElement).join(PATH_SEP))
       }
-      return new Buffer(encodeElement(e))
+      return Buffer.from(encodeElement(e))
     },
     decode: function (e) {
       // TODO: detect and parse ttl records
