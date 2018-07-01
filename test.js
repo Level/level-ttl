@@ -530,7 +530,7 @@ function testSinglePutWithDefaultTtl (t, db, createReadStream) {
 
 test('single put with default ttl set', testSinglePutWithDefaultTtl, { defaultTTL: 75 })
 
-test('single put with default ttl set (custom ttlEncoding)',testSinglePutWithDefaultTtl, {
+test('single put with default ttl set (custom ttlEncoding)', testSinglePutWithDefaultTtl, {
   defaultTTL: 75,
   ttlEncoding: bytewise
 })
