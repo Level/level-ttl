@@ -3,8 +3,8 @@ exports.create = function createEncoding (options) {
 
   if (options.ttlEncoding) return options.ttlEncoding
 
-  const PATH_SEP = options.separator,
-    INITIAL_SEP = options.sub ? '' : PATH_SEP
+  const PATH_SEP = options.separator
+  const INITIAL_SEP = options.sub ? '' : PATH_SEP
 
   function encodeElement (e) {
     // transform dates to timestamp strings

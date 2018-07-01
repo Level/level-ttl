@@ -1,7 +1,7 @@
-const after = require('after'),
-  xtend = require('xtend'),
-  encoding = require('./encoding'),
-  Lock = require('lock')
+const after = require('after')
+const xtend = require('xtend')
+const encoding = require('./encoding')
+const Lock = require('lock')
 
 function prefixKey (db, key) {
   return db._ttl.encoding.encode(db._ttl._prefixNs.concat(key))
@@ -12,23 +12,23 @@ function expiryKey (db, exp, key) {
 }
 
 function buildQuery (db) {
-  const encode = db._ttl.encoding.encode,
-    _expiryNs = db._ttl._expiryNs
+  const encode = db._ttl.encoding.encode
+  const expiryNs = db._ttl._expiryNs
   return {
     keyEncoding: 'binary',
     valueEncoding: 'binary',
-    gte: encode(_expiryNs),
-    lte: encode(_expiryNs.concat(new Date()))
+    gte: encode(expiryNs),
+    lte: encode(expiryNs.concat(new Date()))
   }
 }
 
 function startTtl (db, checkFrequency) {
   db._ttl.intervalId = setInterval(function () {
-    const batch = [],
-      subBatch = [],
-      sub = db._ttl.sub,
-      query = buildQuery(db),
-      decode = db._ttl.encoding.decode
+    const batch = []
+    const subBatch = []
+    const sub = db._ttl.sub
+    const query = buildQuery(db)
+    const decode = db._ttl.encoding.decode
     var createReadStream
 
     db._ttl._checkInProgress = true
@@ -92,11 +92,11 @@ function stopTtl (db, callback) {
 }
 
 function ttlon (db, keys, ttl, callback) {
-  const exp = new Date(Date.now() + ttl),
-    batch = [],
-    sub = db._ttl.sub,
-    batchFn = (sub ? sub.batch.bind(sub) : db._ttl.batch),
-    encode = db._ttl.encoding.encode
+  const exp = new Date(Date.now() + ttl)
+  const batch = []
+  const sub = db._ttl.sub
+  const batchFn = (sub ? sub.batch.bind(sub) : db._ttl.batch)
+  const encode = db._ttl.encoding.encode
 
   db._ttl._lock(keys, function (release) {
     callback = release(callback || function () {})
@@ -117,21 +117,21 @@ function ttlon (db, keys, ttl, callback) {
 }
 
 function ttloff (db, keys, callback) {
-  const batch = [],
-    sub = db._ttl.sub,
-    getFn = (sub ? sub.get.bind(sub) : db.get.bind(db)),
-    batchFn = (sub ? sub.batch.bind(sub) : db._ttl.batch),
-    decode = db._ttl.encoding.decode,
-    done = after(keys.length, function (err) {
-      if (err) db.emit('error', err)
+  const batch = []
+  const sub = db._ttl.sub
+  const getFn = (sub ? sub.get.bind(sub) : db.get.bind(db))
+  const batchFn = (sub ? sub.batch.bind(sub) : db._ttl.batch)
+  const decode = db._ttl.encoding.decode
+  const done = after(keys.length, function (err) {
+    if (err) db.emit('error', err)
 
-      if (!batch.length) return callback && callback()
+    if (!batch.length) return callback && callback()
 
-      batchFn(batch, { keyEncoding: 'binary', valueEncoding: 'binary' }, function (err) {
-        if (err) { db.emit('error', err) }
-        callback && callback()
-      })
+    batchFn(batch, { keyEncoding: 'binary', valueEncoding: 'binary' }, function (err) {
+      if (err) { db.emit('error', err) }
+      callback && callback()
     })
+  })
 
   keys.forEach(function (key) {
     const prefixedKey = prefixKey(db, key)
@@ -157,8 +157,8 @@ function put (db, key, value, options, callback) {
     options.ttl = db._ttl.options.defaultTTL
   }
 
-  var done,
-    _callback = callback
+  var done
+  var _callback = callback
 
   if (options.ttl > 0 && key != null && value != null) {
     done = after(2, _callback || function () {})
@@ -176,8 +176,9 @@ function setTtl (db, key, ttl, callback) {
 }
 
 function del (db, key, options, callback) {
-  var done,
-    _callback = callback
+  var done
+  var _callback = callback
+
   if (key != null) {
     done = after(2, _callback || function () {})
     callback = done
@@ -199,10 +200,10 @@ function batch (db, arr, options, callback) {
     options.ttl = db._ttl.options.defaultTTL
   }
 
-  var done,
-    on,
-    off,
-    _callback = callback
+  var done
+  var on
+  var off
+  var _callback = callback
 
   if (options.ttl > 0 && Array.isArray(arr)) {
     done = after(3, _callback || function () {})
