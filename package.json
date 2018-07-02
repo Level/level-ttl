@@ -28,7 +28,7 @@
     "bytewise": ">=0.8",
     "faucet": "0.0.1",
     "level-sublevel": "^6.4.6",
-    "ltest": "^2.1.1",
+    "level-test": "^4.0.0",
     "slump": "^2.0.0",
     "standard": "^11.0.1",
     "tape": "^4.3.0"

@@ -1,5 +1,6 @@
 const tape = require('tape')
-const ltest = require('ltest')(tape)
+const rimraf = require('rimraf')
+const LevelTest = require('level-test')
 const listStream = require('list-stream')
 const ttl = require('./')
 const xtend = require('xtend')
@@ -9,13 +10,46 @@ const random = require('slump')
 const bytewise = require('bytewise')
 const bwEncode = bytewise.encode
 
-function test (name, fn, opts) {
-  ltest(name, opts, function (t, _db, createReadStream) {
-    var db
-    var close = _db.close.bind(_db) // unmolested close()
+function ltest (desc, opts, cb) {
+  if (typeof opts === 'function') {
+    cb = opts
+    opts = {}
+  }
 
-    db = ttl(_db, xtend({ checkFrequency: 50 }, opts))
-    fn(t, db, createReadStream, close)
+  tape(desc, function (t) {
+    var dbName = 'level-test-' + Date.now()
+    var levelup = LevelTest()
+
+    levelup(dbName, opts, function (err, db) {
+      t.error(err, 'no error on open()')
+      t.ok(db, 'valid db object')
+
+      var location = db.db.db.location
+      var end = t.end.bind(t)
+
+      t.end = function () {
+        db.close(function (err) {
+          t.error(err, 'no error on close()')
+          rimraf(location, function (err) {
+            t.error(err, 'rimraf ok')
+            end()
+          })
+        })
+      }
+
+      // TODO check what we really need createReadStream for,
+      // if it's just for collecting data, we can just pass
+      // db and use level-concat-iterator on db.iterator
+      cb(t, db, db.createReadStream.bind(db))
+    })
+  })
+}
+
+function test (name, fn, opts) {
+  ltest(name, opts, function (t, db, createReadStream) {
+    var close = db.close.bind(db)
+    var ttlDb = ttl(db, xtend({ checkFrequency: 50 }, opts))
+    fn(t, ttlDb, createReadStream, close)
   })
 }
 
