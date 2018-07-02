@@ -5,6 +5,7 @@
 **Add a `'ttl'` (time-to-live) option to LevelUP for `put()` and `batch()`**
 
 [![Build Status](https://travis-ci.org/Level/level-ttl.svg?branch=master)](https://travis-ci.org/Level/level-ttl) [![Greenkeeper badge](https://badges.greenkeeper.io/Level/level-ttl.svg)](https://greenkeeper.io/)
+[![JavaScript Style Guide](https://img.shields.io/badge/code_style-standard-brightgreen.svg)](https://standardjs.com)
 
 [![NPM](https://nodei.co/npm/level-ttl.png?downloads=true&downloadRank=true)](https://nodei.co/npm/level-ttl/)
 [![NPM](https://nodei.co/npm-dl/level-ttl.png?months=6&height=3)](https://nodei.co/npm/level-ttl/)

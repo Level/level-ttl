@@ -1,6 +1,6 @@
 {
   "name": "level-ttl",
-  "description": "Adds a 'ttl' option to LevelUP for puts and batches",
+  "description": "Adds a 'ttl' option to levelup for puts and batches",
   "version": "3.1.1",
   "homepage": "https://github.com/level/level-ttl",
   "authors": [
@@ -25,15 +25,16 @@
   },
   "peerDependencies": {},
   "devDependencies": {
+    "bytewise": ">=0.8",
     "faucet": "0.0.1",
     "level-sublevel": "^6.4.6",
     "ltest": "^2.1.1",
     "slump": "^2.0.0",
-    "tape": "^4.3.0",
-    "bytewise": ">=0.8"
+    "standard": "^11.0.1",
+    "tape": "^4.3.0"
   },
   "scripts": {
-    "test": "tape test.js | faucet"
+    "test": "standard && node test.js | faucet"
   },
   "license": "MIT"
 }
