@@ -86,6 +86,7 @@ function stopTtl (db, callback) {
   // so if one is, defer
   if (db._ttl._checkInProgress) {
     db._ttl._stopAfterCheck = callback
+    // TODO do we really need to return the callback here?
     return db._ttl._stopAfterCheck
   }
   clearInterval(db._ttl.intervalId)
