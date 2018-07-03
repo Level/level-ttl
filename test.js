@@ -699,26 +699,30 @@ ltest('data and level-sublevel ttl meta data separation', function (t, db, creat
   })
 })
 
-// ltest('data and level-sublevel ttl meta data separation (custom ttlEncoding)', function (t, db, createReadStream) {
-//   var subDb = sublevel(db)
-//   var meta = subDb.sublevel('meta')
-//   var ttldb = ttl(db, { sub: meta, ttlEncoding: bytewise })
-//   var batch = randomPutBatch(5)
+ltest('data and level-sublevel ttl meta data separation (custom ttlEncoding)', function (t, db, createReadStream) {
+  // var subDb = sublevel(db)
+  var meta = sublevel(db, 'meta')
+  var ttldb = ttl(db, { sub: meta, ttlEncoding: bytewise })
+  var batch = randomPutBatch(5)
 
-//   ttldb.batch(batch, { ttl: 10000 }, function (err) {
-//     t.ok(!err, 'no error')
-//     db2arr(createReadStream, t, function (arr) {
-//       batch.forEach(function (item) {
-//         contains(t, arr, '!meta!' + bwEncode([ item.key ]), bwRange())
-//         contains(t, arr, {
-//           gt: '!meta!' + bwEncode([ 'x', new Date(0), item.key ]),
-//           lt: '!meta!' + bwEncode([ 'x', new Date(9999999999999), item.key ])
-//         }, bwEncode(item.key))
-//       })
-//       t.end()
-//     }, { valueEncoding: 'binary' })
-//   })
-// })
+  function prefix (buf) {
+    return Buffer.concat([ Buffer.from('!meta!'), buf ])
+  }
+
+  ttldb.batch(batch, { ttl: 10000 }, function (err) {
+    t.ok(!err, 'no error')
+    db2arr(createReadStream, t, function (arr) {
+      batch.forEach(function (item) {
+        contains(t, arr, prefix(bwEncode([ item.key ])), bwRange())
+        contains(t, arr, {
+          gt: prefix(bwEncode([ 'x', new Date(0), item.key ])),
+          lt: prefix(bwEncode([ 'x', new Date(9999999999999), item.key ]))
+        }, bwEncode(item.key))
+      })
+      t.end()
+    }, { keyEncoding: 'binary', valueEncoding: 'binary' })
+  })
+})
 
 // ltest('data and level-sublevel ttl meta data separation (custom sublevel encoding)', function (t, db, createReadStream) {
 //   var subDb = bwSublevel(db)
