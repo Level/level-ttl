@@ -4,8 +4,8 @@ const LevelTest = require('level-test')
 const listStream = require('list-stream')
 const ttl = require('./')
 const xtend = require('xtend')
-const sublevel = require('level-sublevel')
-const bwSublevel = require('level-sublevel/bytewise')
+const sublevel = require('subleveldown')
+// const bwSublevel = require('level-sublevel/bytewise')
 const random = require('slump')
 const bytewise = require('bytewise')
 const bwEncode = bytewise.encode
@@ -682,8 +682,8 @@ ltest('without options', function (t, db, createReadStream) {
 })
 
 ltest('data and level-sublevel ttl meta data separation', function (t, db, createReadStream) {
-  var subDb = sublevel(db)
-  var meta = subDb.sublevel('meta')
+  // var subDb = sublevel(db)
+  var meta = sublevel(db, 'meta')
   var ttldb = ttl(db, { sub: meta })
   var batch = randomPutBatch(5)
 
@@ -699,52 +699,52 @@ ltest('data and level-sublevel ttl meta data separation', function (t, db, creat
   })
 })
 
-ltest('data and level-sublevel ttl meta data separation (custom ttlEncoding)', function (t, db, createReadStream) {
-  var subDb = sublevel(db)
-  var meta = subDb.sublevel('meta')
-  var ttldb = ttl(db, { sub: meta, ttlEncoding: bytewise })
-  var batch = randomPutBatch(5)
+// ltest('data and level-sublevel ttl meta data separation (custom ttlEncoding)', function (t, db, createReadStream) {
+//   var subDb = sublevel(db)
+//   var meta = subDb.sublevel('meta')
+//   var ttldb = ttl(db, { sub: meta, ttlEncoding: bytewise })
+//   var batch = randomPutBatch(5)
 
-  ttldb.batch(batch, { ttl: 10000 }, function (err) {
-    t.ok(!err, 'no error')
-    db2arr(createReadStream, t, function (arr) {
-      batch.forEach(function (item) {
-        contains(t, arr, '!meta!' + bwEncode([ item.key ]), bwRange())
-        contains(t, arr, {
-          gt: '!meta!' + bwEncode([ 'x', new Date(0), item.key ]),
-          lt: '!meta!' + bwEncode([ 'x', new Date(9999999999999), item.key ])
-        }, bwEncode(item.key))
-      })
-      t.end()
-    }, { valueEncoding: 'binary' })
-  })
-})
+//   ttldb.batch(batch, { ttl: 10000 }, function (err) {
+//     t.ok(!err, 'no error')
+//     db2arr(createReadStream, t, function (arr) {
+//       batch.forEach(function (item) {
+//         contains(t, arr, '!meta!' + bwEncode([ item.key ]), bwRange())
+//         contains(t, arr, {
+//           gt: '!meta!' + bwEncode([ 'x', new Date(0), item.key ]),
+//           lt: '!meta!' + bwEncode([ 'x', new Date(9999999999999), item.key ])
+//         }, bwEncode(item.key))
+//       })
+//       t.end()
+//     }, { valueEncoding: 'binary' })
+//   })
+// })
 
-ltest('data and level-sublevel ttl meta data separation (custom sublevel encoding)', function (t, db, createReadStream) {
-  var subDb = bwSublevel(db)
-  var meta = subDb.sublevel('meta')
-  var ttldb = ttl(db, { sub: meta, ttlEncoding: bytewise })
-  var batch = randomPutBatch(5)
+// ltest('data and level-sublevel ttl meta data separation (custom sublevel encoding)', function (t, db, createReadStream) {
+//   var subDb = bwSublevel(db)
+//   var meta = subDb.sublevel('meta')
+//   var ttldb = ttl(db, { sub: meta, ttlEncoding: bytewise })
+//   var batch = randomPutBatch(5)
 
-  ttldb.batch(batch, { ttl: 10000 }, function (err) {
-    t.ok(!err, 'no error')
-    db2arr(createReadStream, t, function (arr) {
-      batch.forEach(function (item) {
-        // bytewise keys in bytewise sublevels are double-encoded for now
-        contains(t, arr, bwEncode([ [ 'meta' ], bwEncode([ item.key ]) ]), bwRange())
-        contains(t, arr, {
-          gt: bwEncode([ [ 'meta' ], bwEncode([ 'x', new Date(0), item.key ]) ]),
-          lt: bwEncode([ [ 'meta' ], bwEncode([ 'x', new Date(9999999999999), item.key ]) ])
-        }, bwEncode(item.key))
-      })
-      t.end()
-    }, { keyEncoding: 'binary', valueEncoding: 'binary' })
-  })
-})
+//   ttldb.batch(batch, { ttl: 10000 }, function (err) {
+//     t.ok(!err, 'no error')
+//     db2arr(createReadStream, t, function (arr) {
+//       batch.forEach(function (item) {
+//         // bytewise keys in bytewise sublevels are double-encoded for now
+//         contains(t, arr, bwEncode([ [ 'meta' ], bwEncode([ item.key ]) ]), bwRange())
+//         contains(t, arr, {
+//           gt: bwEncode([ [ 'meta' ], bwEncode([ 'x', new Date(0), item.key ]) ]),
+//           lt: bwEncode([ [ 'meta' ], bwEncode([ 'x', new Date(9999999999999), item.key ]) ])
+//         }, bwEncode(item.key))
+//       })
+//       t.end()
+//     }, { keyEncoding: 'binary', valueEncoding: 'binary' })
+//   })
+// })
 
 ltest('that level-sublevel data expires properly', function (t, db, createReadStream) {
-  var subDb = sublevel(db)
-  var meta = subDb.sublevel('meta')
+  // var subDb = sublevel(db)
+  var meta = sublevel(db, 'meta')
   var ttldb = ttl(db, { checkFrequency: 25, sub: meta })
 
   ttldb.batch(randomPutBatch(50), { ttl: 100 }, function (err) {
@@ -757,8 +757,8 @@ ltest('that level-sublevel data expires properly', function (t, db, createReadSt
 })
 
 ltest('that level-sublevel data expires properly (custom ttlEncoding)', function (t, db, createReadStream) {
-  var subDb = sublevel(db)
-  var meta = subDb.sublevel('meta')
+  // var subDb = sublevel(db)
+  var meta = sublevel(db, 'meta')
   var ttldb = ttl(db, { checkFrequency: 25, sub: meta, ttlEncoding: bytewise })
 
   ttldb.batch(randomPutBatch(50), { ttl: 100 }, function (err) {
