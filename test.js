@@ -680,8 +680,7 @@ ltest('without options', function (t, db, createReadStream) {
   t.end()
 })
 
-ltest('data and level-sublevel ttl meta data separation', function (t, db, createReadStream) {
-  // var subDb = sublevel(db)
+ltest('data and subleveldown ttl meta data separation', function (t, db, createReadStream) {
   var meta = sublevel(db, 'meta')
   var ttldb = ttl(db, { sub: meta })
   var batch = randomPutBatch(5)
@@ -698,8 +697,7 @@ ltest('data and level-sublevel ttl meta data separation', function (t, db, creat
   })
 })
 
-ltest('data and level-sublevel ttl meta data separation (custom ttlEncoding)', function (t, db, createReadStream) {
-  // var subDb = sublevel(db)
+ltest('data and subleveldown ttl meta data separation (custom ttlEncoding)', function (t, db, createReadStream) {
   var meta = sublevel(db, 'meta')
   var ttldb = ttl(db, { sub: meta, ttlEncoding: bytewise })
   var batch = randomPutBatch(5)
@@ -723,8 +721,7 @@ ltest('data and level-sublevel ttl meta data separation (custom ttlEncoding)', f
   })
 })
 
-ltest('that level-sublevel data expires properly', function (t, db, createReadStream) {
-  // var subDb = sublevel(db)
+ltest('that subleveldown data expires properly', function (t, db, createReadStream) {
   var meta = sublevel(db, 'meta')
   var ttldb = ttl(db, { checkFrequency: 25, sub: meta })
 
@@ -737,8 +734,7 @@ ltest('that level-sublevel data expires properly', function (t, db, createReadSt
   })
 })
 
-ltest('that level-sublevel data expires properly (custom ttlEncoding)', function (t, db, createReadStream) {
-  // var subDb = sublevel(db)
+ltest('that subleveldown data expires properly (custom ttlEncoding)', function (t, db, createReadStream) {
   var meta = sublevel(db, 'meta')
   var ttldb = ttl(db, { checkFrequency: 25, sub: meta, ttlEncoding: bytewise })
 
