@@ -43,9 +43,8 @@ function ltest (desc, opts, cb) {
 
 function test (name, fn, opts) {
   ltest(name, opts, function (t, db) {
-    var close = db.close.bind(db)
     var ttlDb = ttl(db, xtend({ checkFrequency: 50 }, opts))
-    fn(t, ttlDb, close)
+    fn(t, ttlDb)
   })
 }
 
@@ -502,7 +501,7 @@ function wrappedTest () {
     return _clearInterval.apply(global, arguments)
   }
 
-  test('test stop() method stops interval and doesn\'t hold process up', function (t, db, close) {
+  test('test stop() method stops interval and doesn\'t hold process up', function (t, db) {
     t.equals(intervals, 1, '1 interval timer')
     db.put('foo', 'bar1', { ttl: 25 })
 
@@ -522,7 +521,7 @@ function wrappedTest () {
 
     setTimeout(function () {
       db.stop(function () {
-        close(function () {
+        db._ttl.close(function () {
           global.setInterval = _setInterval
           global.clearInterval = _clearInterval
           t.equals(0, intervals, 'all interval timers cleared')
