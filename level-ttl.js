@@ -1,7 +1,7 @@
 const after = require('after')
 const xtend = require('xtend')
 const encoding = require('./encoding')
-const Lock = require('lock')
+const Lock = require('lock').Lock
 
 function prefixKey (db, key) {
   return db._ttl.encoding.encode(db._ttl._prefixNs.concat(key))
