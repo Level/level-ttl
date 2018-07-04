@@ -1,7 +1,7 @@
 const tape = require('tape')
 const rimraf = require('rimraf')
 const LevelTest = require('level-test')
-const listStream = require('list-stream')
+const concat = require('level-concat-iterator')
 const ttl = require('./')
 const xtend = require('xtend')
 const sublevel = require('subleveldown')
@@ -50,11 +50,10 @@ function test (name, fn, opts) {
 }
 
 function db2arr (t, db, callback, opts) {
-  db.createReadStream(opts)
-    .pipe(listStream.obj(function (err, arr) {
-      if (err) return t.fail(err)
-      callback(arr)
-    }))
+  concat(db.iterator(opts), function (err, arr) {
+    if (err) return t.fail(err)
+    callback(arr)
+  })
 }
 
 function bufferEq (a, b) {
