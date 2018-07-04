@@ -575,78 +575,53 @@ test('single put with overridden ttl set (custom ttlEncoding)', put(200, { ttl: 
   ttlEncoding: bytewise
 })
 
-function testBatchPutWithDefaultTtl (t, db) {
-  db.batch([
-    { type: 'put', key: 'foo', value: 'foovalue' },
-    { type: 'put', key: 'bar', value: 'barvalue' }
-  ], function (err) {
-    t.ok(!err, 'no error')
-    setTimeout(function () {
-      db.get('foo', function (err, value) {
-        t.notOk(err, 'no error')
-        t.equal('foovalue', value)
-        db.get('bar', function (err, value) {
+function batch (timeout, opts) {
+  return function (t, db) {
+    db.batch([
+      { type: 'put', key: 'foo', value: 'foovalue' },
+      { type: 'put', key: 'bar', value: 'barvalue' }
+    ], opts, function (err) {
+      t.ok(!err, 'no error')
+      setTimeout(function () {
+        db.get('foo', function (err, value) {
           t.notOk(err, 'no error')
-          t.equal('barvalue', value)
+          t.equal('foovalue', value)
+          db.get('bar', function (err, value) {
+            t.notOk(err, 'no error')
+            t.equal('barvalue', value)
+          })
         })
-      })
-    }, 50)
+      }, 50)
 
-    setTimeout(function () {
-      db.get('foo', function (err, value) {
-        t.ok(err && err.notFound, 'not found error')
-        t.notOk(value, 'no value')
-        db.get('bar', function (err, value) {
+      setTimeout(function () {
+        db.get('foo', function (err, value) {
           t.ok(err && err.notFound, 'not found error')
           t.notOk(value, 'no value')
-          t.end()
+          db.get('bar', function (err, value) {
+            t.ok(err && err.notFound, 'not found error')
+            t.notOk(value, 'no value')
+            t.end()
+          })
         })
-      })
-    }, 175)
-  })
+      }, timeout)
+    })
+  }
 }
 
-test('batch put with default ttl set', testBatchPutWithDefaultTtl, { defaultTTL: 75 })
+test('batch put with default ttl set', batch(175), {
+  defaultTTL: 75
+})
 
-test('batch put with default ttl set (custom ttlEncoding)', testBatchPutWithDefaultTtl, {
+test('batch put with default ttl set (custom ttlEncoding)', batch(175), {
   defaultTTL: 75,
   ttlEncoding: bytewise
 })
 
-function testBatchPutWithTtlOverride (t, db) {
-  db.batch([
-    { type: 'put', key: 'foo', value: 'foovalue' },
-    { type: 'put', key: 'bar', value: 'barvalue' }
-  ], { ttl: 99 }, function (err) {
-    t.error(err, 'no error')
-    setTimeout(function () {
-      db.get('foo', function (err, value) {
-        t.notOk(err, 'no error')
-        t.equal('foovalue', value)
-        db.get('bar', function (err, value) {
-          t.notOk(err, 'no error')
-          t.equal('barvalue', value)
-        })
-      })
-    }, 50)
+test('batch put with overriden ttl set', batch(200, { ttl: 99 }), {
+  defaultTTL: 75
+})
 
-    setTimeout(function () {
-      db.get('foo', function (err, value) {
-        t.ok(err && err.notFound, 'not found error')
-        t.notOk(value, 'no value')
-        db.get('bar', function (err, value) {
-          t.ok(err && err.notFound, 'not found error')
-          t.notOk(value, 'no value')
-          t.end()
-        })
-      })
-    }, 200)
-  })
-}
-
-test('batch put with overriden ttl set', testBatchPutWithTtlOverride, { defaultTTL: 75 })
-
-test('batch put with overriden ttl set (custom ttlEncoding)', testBatchPutWithTtlOverride, {
+test('batch put with overriden ttl set (custom ttlEncoding)', batch(200, { ttl: 99 }), {
   defaultTTL: 75,
   ttlEncoding: bytewise
 })
