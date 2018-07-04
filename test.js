@@ -534,57 +534,43 @@ function wrappedTest () {
 
 wrappedTest()
 
-function testSinglePutWithDefaultTtl (t, db) {
-  db.put('foo', 'foovalue', function (err) {
-    t.ok(!err, 'no error')
+function put (timeout, opts) {
+  return function (t, db) {
+    db.put('foo', 'foovalue', opts, function (err) {
+      t.ok(!err, 'no error')
 
-    setTimeout(function () {
-      db.get('foo', function (err, value) {
-        t.notOk(err, 'no error')
-        t.equal('foovalue', value)
-      })
-    }, 50)
+      setTimeout(function () {
+        db.get('foo', function (err, value) {
+          t.notOk(err, 'no error')
+          t.equal('foovalue', value)
+        })
+      }, 50)
 
-    setTimeout(function () {
-      db.get('foo', function (err, value) {
-        t.ok(err && err.notFound, 'not found error')
-        t.notOk(value, 'no value')
-        t.end()
-      })
-    }, 175)
-  })
+      setTimeout(function () {
+        db.get('foo', function (err, value) {
+          t.ok(err && err.notFound, 'not found error')
+          t.notOk(value, 'no value')
+          t.end()
+        })
+      }, timeout)
+    })
+  }
 }
 
-test('single put with default ttl set', testSinglePutWithDefaultTtl, { defaultTTL: 75 })
+test('single put with default ttl set', put(175), {
+  defaultTTL: 75
+})
 
-test('single put with default ttl set (custom ttlEncoding)', testSinglePutWithDefaultTtl, {
+test('single put with default ttl set (custom ttlEncoding)', put(175), {
   defaultTTL: 75,
   ttlEncoding: bytewise
 })
 
-function testSinglePutWithTtlOverride (t, db) {
-  db.put('foo', 'foovalue', { ttl: 99 }, function (err) {
-    t.ok(!err, 'no error')
-    setTimeout(function () {
-      db.get('foo', function (err, value) {
-        t.notOk(err, 'no error')
-        t.equal('foovalue', value)
-      })
-    }, 50)
+test('single put with overridden ttl set', put(200, { ttl: 99 }), {
+  defaultTTL: 75
+})
 
-    setTimeout(function () {
-      db.get('foo', function (err, value) {
-        t.ok(err && err.notFound, 'not found error')
-        t.notOk(value, 'no value')
-        t.end()
-      })
-    }, 200)
-  })
-}
-
-test('single put with overridden ttl set', testSinglePutWithTtlOverride, { defaultTTL: 75 })
-
-test('single put with overridden ttl set (custom ttlEncoding)', testSinglePutWithTtlOverride, {
+test('single put with overridden ttl set (custom ttlEncoding)', put(200, { ttl: 99 }), {
   defaultTTL: 75,
   ttlEncoding: bytewise
 })
