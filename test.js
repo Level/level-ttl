@@ -1,7 +1,7 @@
 const tape = require('tape')
 const rimraf = require('rimraf')
 const LevelTest = require('level-test')
-const listStream = require('list-stream')
+const concat = require('level-concat-iterator')
 const ttl = require('./')
 const xtend = require('xtend')
 const sublevel = require('subleveldown')
@@ -36,28 +36,24 @@ function ltest (desc, opts, cb) {
         })
       }
 
-      // TODO check what we really need createReadStream for,
-      // if it's just for collecting data, we can just pass
-      // db and use level-concat-iterator on db.iterator
-      cb(t, db, db.createReadStream.bind(db))
+      cb(t, db)
     })
   })
 }
 
 function test (name, fn, opts) {
-  ltest(name, opts, function (t, db, createReadStream) {
+  ltest(name, opts, function (t, db) {
     var close = db.close.bind(db)
     var ttlDb = ttl(db, xtend({ checkFrequency: 50 }, opts))
-    fn(t, ttlDb, createReadStream, close)
+    fn(t, ttlDb, close)
   })
 }
 
-function db2arr (createReadStream, t, callback, opts) {
-  createReadStream(opts)
-    .pipe(listStream.obj(function (err, arr) {
-      if (err) return t.fail(err)
-      callback(arr)
-    }))
+function db2arr (t, db, callback, opts) {
+  concat(db.iterator(opts), function (err, arr) {
+    if (err) return t.fail(err)
+    callback(arr)
+  })
 }
 
 function bufferEq (a, b) {
@@ -135,9 +131,9 @@ function randomPutBatch (length) {
   return batch
 }
 
-function verifyIn (delay, createReadStream, t, cb, opts) {
+function verifyIn (t, db, delay, cb, opts) {
   setTimeout(function () {
-    db2arr(createReadStream, t, cb, opts)
+    db2arr(t, db, cb, opts)
   }, delay)
 }
 
@@ -147,17 +143,17 @@ test('single ttl entry', function (t, db) {
   t.end()
 })
 
-test('single ttl entry with put', function (t, db, createReadStream) {
+test('single ttl entry with put', function (t, db) {
   db.put('foo', 'foovalue', function (err) {
     t.notOk(err, 'no error')
     db.put('bar', 'barvalue', { ttl: 100 }, function (err) {
       t.notOk(err, 'no error')
-      db2arr(createReadStream, t, function (arr) {
+      db2arr(t, db, function (arr) {
         contains(t, arr, /!ttl!x!\d{13}!bar/, 'bar')
         contains(t, arr, '!ttl!bar', /\d{13}/)
         contains(t, arr, 'bar', 'barvalue')
         contains(t, arr, 'foo', 'foovalue')
-        verifyIn(150, createReadStream, t, function (arr) {
+        verifyIn(t, db, 150, function (arr) {
           t.deepEqual(arr, [
             { key: 'foo', value: 'foovalue' }
           ])
@@ -168,18 +164,17 @@ test('single ttl entry with put', function (t, db, createReadStream) {
   })
 })
 
-test('single ttl entry with put (custom ttlEncoding)', function (t, db, createReadStream) {
+test('single ttl entry with put (custom ttlEncoding)', function (t, db) {
   db.put('foo', 'foovalue', function (err) {
     t.notOk(err, 'no error')
     db.put('bar', 'barvalue', { ttl: 100 }, function (err) {
       t.notOk(err, 'no error')
-      db2arr(createReadStream, t, function (arr) {
+      db2arr(t, db, function (arr) {
         contains(t, arr, bwRange([ 'ttl', 'x' ]), bwEncode('bar'))
         contains(t, arr, bwEncode([ 'ttl', 'bar' ]), bwRange())
         contains(t, arr, Buffer.from('bar'), Buffer.from('barvalue'))
         contains(t, arr, Buffer.from('foo'), Buffer.from('foovalue'))
-
-        verifyIn(150, createReadStream, t, function (arr) {
+        verifyIn(t, db, 150, function (arr) {
           t.deepEqual(arr, [
             { key: 'foo', value: 'foovalue' }
           ])
@@ -190,9 +185,9 @@ test('single ttl entry with put (custom ttlEncoding)', function (t, db, createRe
   })
 }, { ttlEncoding: bytewise })
 
-test('multiple ttl entries with put', function (t, db, createReadStream) {
+test('multiple ttl entries with put', function (t, db) {
   var expect = function (delay, keys, cb) {
-    verifyIn(delay, createReadStream, t, function (arr) {
+    verifyIn(t, db, delay, function (arr) {
       t.equal(arr.length, 1 + keys * 3, 'correct number of entries in db')
       contains(t, arr, 'afoo', 'foovalue')
       if (keys >= 1) {
@@ -225,9 +220,9 @@ test('multiple ttl entries with put', function (t, db, createReadStream) {
   expect(500, 0, t.end.bind(t))
 })
 
-test('multiple ttl entries with put (custom ttlEncoding)', function (t, db, createReadStream) {
+test('multiple ttl entries with put (custom ttlEncoding)', function (t, db) {
   var expect = function (delay, keys, cb) {
-    verifyIn(delay, createReadStream, t, function (arr) {
+    verifyIn(t, db, delay, function (arr) {
       t.equal(arr.length, 1 + keys * 3, 'correct number of entries in db')
       contains(t, arr, Buffer.from('afoo'), Buffer.from('foovalue'))
       if (keys >= 1) {
@@ -260,9 +255,9 @@ test('multiple ttl entries with put (custom ttlEncoding)', function (t, db, crea
   expect(500, 0, t.end.bind(t))
 }, { ttlEncoding: bytewise })
 
-test('multiple ttl entries with batch-put', function (t, db, createReadStream) {
+test('multiple ttl entries with batch-put', function (t, db) {
   var expect = function (delay, keys, cb) {
-    verifyIn(delay, createReadStream, t, function (arr) {
+    verifyIn(t, db, delay, function (arr) {
       t.equal(arr.length, 1 + keys * 3, 'correct number of entries in db')
       contains(t, arr, 'afoo', 'foovalue')
       if (keys >= 1) {
@@ -302,9 +297,9 @@ test('multiple ttl entries with batch-put', function (t, db, createReadStream) {
   expect(20, 4, t.end.bind(t))
 })
 
-test('multiple ttl entries with batch-put (custom ttlEncoding)', function (t, db, createReadStream) {
+test('multiple ttl entries with batch-put (custom ttlEncoding)', function (t, db) {
   var expect = function (delay, keys, cb) {
-    verifyIn(delay, createReadStream, t, function (arr) {
+    verifyIn(t, db, delay, function (arr) {
       t.equal(arr.length, 1 + keys * 3, 'correct number of entries in db')
       contains(t, arr, Buffer.from('afoo'), Buffer.from('foovalue'))
       if (keys >= 1) {
@@ -344,11 +339,11 @@ test('multiple ttl entries with batch-put (custom ttlEncoding)', function (t, db
   expect(20, 4, t.end.bind(t))
 }, { ttlEncoding: bytewise })
 
-test('prolong entry life with additional put', function (t, db, createReadStream) {
+test('prolong entry life with additional put', function (t, db) {
   var retest = function (delay, cb) {
     setTimeout(function () {
       db.put('bar', 'barvalue', { ttl: 250 })
-      verifyIn(50, createReadStream, t, function (arr) {
+      verifyIn(t, db, 50, function (arr) {
         contains(t, arr, 'foo', 'foovalue')
         contains(t, arr, 'bar', 'barvalue')
         contains(t, arr, /!ttl!x!\d{13}!bar/, 'bar')
@@ -364,11 +359,11 @@ test('prolong entry life with additional put', function (t, db, createReadStream
   retest(180, t.end.bind(t))
 })
 
-test('prolong entry life with additional put (custom ttlEncoding)', function (t, db, createReadStream) {
+test('prolong entry life with additional put (custom ttlEncoding)', function (t, db) {
   var retest = function (delay, cb) {
     setTimeout(function () {
       db.put('bar', 'barvalue', { ttl: 250 })
-      verifyIn(50, createReadStream, t, function (arr) {
+      verifyIn(t, db, 50, function (arr) {
         contains(t, arr, Buffer.from('foo'), Buffer.from('foovalue'))
         contains(t, arr, Buffer.from('bar'), Buffer.from('barvalue'))
         contains(t, arr, bwRange([ 'ttl', 'x' ]), bwEncode('bar'))
@@ -383,11 +378,11 @@ test('prolong entry life with additional put (custom ttlEncoding)', function (t,
   retest(180, t.end.bind(t))
 }, { ttlEncoding: bytewise })
 
-test('prolong entry life with ttl(key, ttl)', function (t, db, createReadStream) {
+test('prolong entry life with ttl(key, ttl)', function (t, db) {
   var retest = function (delay, cb) {
     setTimeout(function () {
       db.ttl('bar', 250)
-      verifyIn(25, createReadStream, t, function (arr) {
+      verifyIn(t, db, 25, function (arr) {
         contains(t, arr, 'bar', 'barvalue')
         contains(t, arr, 'foo', 'foovalue')
         contains(t, arr, /!ttl!x!\d{13}!bar/, 'bar')
@@ -403,11 +398,11 @@ test('prolong entry life with ttl(key, ttl)', function (t, db, createReadStream)
   retest(180, t.end.bind(t))
 })
 
-test('prolong entry life with ttl(key, ttl) (custom ttlEncoding)', function (t, db, createReadStream) {
+test('prolong entry life with ttl(key, ttl) (custom ttlEncoding)', function (t, db) {
   var retest = function (delay, cb) {
     setTimeout(function () {
       db.ttl('bar', 250)
-      verifyIn(25, createReadStream, t, function (arr) {
+      verifyIn(t, db, 25, function (arr) {
         contains(t, arr, Buffer.from('bar'), Buffer.from('barvalue'))
         contains(t, arr, Buffer.from('foo'), Buffer.from('foovalue'))
         contains(t, arr, bwRange([ 'ttl', 'x' ]), bwEncode('bar'))
@@ -423,11 +418,11 @@ test('prolong entry life with ttl(key, ttl) (custom ttlEncoding)', function (t, 
   retest(180, t.end.bind(t))
 }, { ttlEncoding: bytewise })
 
-test('del removes both key and its ttl meta data', function (t, db, createReadStream) {
+test('del removes both key and its ttl meta data', function (t, db) {
   db.put('foo', 'foovalue')
   db.put('bar', 'barvalue', { ttl: 250 })
 
-  verifyIn(150, createReadStream, t, function (arr) {
+  verifyIn(t, db, 150, function (arr) {
     contains(t, arr, 'foo', 'foovalue')
     contains(t, arr, 'bar', 'barvalue')
     contains(t, arr, /!ttl!x!\d{13}!bar/, 'bar')
@@ -438,7 +433,7 @@ test('del removes both key and its ttl meta data', function (t, db, createReadSt
     db.del('bar')
   }, 250)
 
-  verifyIn(350, createReadStream, t, function (arr) {
+  verifyIn(t, db, 350, function (arr) {
     t.deepEqual(arr, [
       { key: 'foo', value: 'foovalue' }
     ])
@@ -446,11 +441,11 @@ test('del removes both key and its ttl meta data', function (t, db, createReadSt
   })
 })
 
-test('del removes both key and its ttl meta data (value encoding)', function (t, db, createReadStream) {
+test('del removes both key and its ttl meta data (value encoding)', function (t, db) {
   db.put('foo', { v: 'foovalue' })
   db.put('bar', { v: 'barvalue' }, { ttl: 250 })
 
-  verifyIn(50, createReadStream, t, function (arr) {
+  verifyIn(t, db, 50, function (arr) {
     contains(t, arr, 'foo', '{"v":"foovalue"}')
     contains(t, arr, 'bar', '{"v":"barvalue"}')
     contains(t, arr, /!ttl!x!\d{13}!bar/, 'bar')
@@ -461,7 +456,7 @@ test('del removes both key and its ttl meta data (value encoding)', function (t,
     db.del('bar')
   }, 175)
 
-  verifyIn(350, createReadStream, t, function (arr) {
+  verifyIn(t, db, 350, function (arr) {
     t.deepEqual(arr, [
       { key: 'foo', value: '{"v":"foovalue"}' }
     ])
@@ -469,11 +464,11 @@ test('del removes both key and its ttl meta data (value encoding)', function (t,
   }, { valueEncoding: 'utf8' })
 }, { keyEncoding: 'utf8', valueEncoding: 'json' })
 
-test('del removes both key and its ttl meta data (custom ttlEncoding)', function (t, db, createReadStream) {
+test('del removes both key and its ttl meta data (custom ttlEncoding)', function (t, db) {
   db.put('foo', { v: 'foovalue' })
   db.put('bar', { v: 'barvalue' }, { ttl: 250 })
 
-  verifyIn(50, createReadStream, t, function (arr) {
+  verifyIn(t, db, 50, function (arr) {
     contains(t, arr, Buffer.from('foo'), Buffer.from('{"v":"foovalue"}'))
     contains(t, arr, Buffer.from('bar'), Buffer.from('{"v":"barvalue"}'))
     contains(t, arr, bwRange([ 'ttl', 'x' ]), bwEncode('bar'))
@@ -484,7 +479,7 @@ test('del removes both key and its ttl meta data (custom ttlEncoding)', function
     db.del('bar')
   }, 175)
 
-  verifyIn(350, createReadStream, t, function (arr) {
+  verifyIn(t, db, 350, function (arr) {
     t.deepEqual(arr, [
       { key: 'foo', value: '{"v":"foovalue"}' }
     ])
@@ -507,7 +502,7 @@ function wrappedTest () {
     return _clearInterval.apply(global, arguments)
   }
 
-  test('test stop() method stops interval and doesn\'t hold process up', function (t, db, createReadStream, close) {
+  test('test stop() method stops interval and doesn\'t hold process up', function (t, db, close) {
     t.equals(intervals, 1, '1 interval timer')
     db.put('foo', 'bar1', { ttl: 25 })
 
@@ -540,7 +535,7 @@ function wrappedTest () {
 
 wrappedTest()
 
-function testSinglePutWithDefaultTtl (t, db, createReadStream) {
+function testSinglePutWithDefaultTtl (t, db) {
   db.put('foo', 'foovalue', function (err) {
     t.ok(!err, 'no error')
 
@@ -568,7 +563,7 @@ test('single put with default ttl set (custom ttlEncoding)', testSinglePutWithDe
   ttlEncoding: bytewise
 })
 
-function testSinglePutWithTtlOverride (t, db, createReadStream) {
+function testSinglePutWithTtlOverride (t, db) {
   db.put('foo', 'foovalue', { ttl: 99 }, function (err) {
     t.ok(!err, 'no error')
     setTimeout(function () {
@@ -595,7 +590,7 @@ test('single put with overridden ttl set (custom ttlEncoding)', testSinglePutWit
   ttlEncoding: bytewise
 })
 
-function testBatchPutWithDefaultTtl (t, db, createReadStream) {
+function testBatchPutWithDefaultTtl (t, db) {
   db.batch([
     { type: 'put', key: 'foo', value: 'foovalue' },
     { type: 'put', key: 'bar', value: 'barvalue' }
@@ -633,7 +628,7 @@ test('batch put with default ttl set (custom ttlEncoding)', testBatchPutWithDefa
   ttlEncoding: bytewise
 })
 
-function testBatchPutWithTtlOverride (t, db, createReadStream) {
+function testBatchPutWithTtlOverride (t, db) {
   db.batch([
     { type: 'put', key: 'foo', value: 'foovalue' },
     { type: 'put', key: 'bar', value: 'barvalue' }
@@ -671,7 +666,7 @@ test('batch put with overriden ttl set (custom ttlEncoding)', testBatchPutWithTt
   ttlEncoding: bytewise
 })
 
-ltest('without options', function (t, db, createReadStream) {
+ltest('without options', function (t, db) {
   try {
     ttl(db)
   } catch (err) {
@@ -680,14 +675,14 @@ ltest('without options', function (t, db, createReadStream) {
   t.end()
 })
 
-ltest('data and subleveldown ttl meta data separation', function (t, db, createReadStream) {
+ltest('data and subleveldown ttl meta data separation', function (t, db) {
   var meta = sublevel(db, 'meta')
   var ttldb = ttl(db, { sub: meta })
   var batch = randomPutBatch(5)
 
   ttldb.batch(batch, { ttl: 10000 }, function (err) {
     t.ok(!err, 'no error')
-    db2arr(createReadStream, t, function (arr) {
+    db2arr(t, db, function (arr) {
       batch.forEach(function (item) {
         contains(t, arr, '!meta!' + item.key, /\d{13}/)
         contains(t, arr, new RegExp('!meta!x!\\d{13}!' + item.key), item.key)
@@ -697,7 +692,7 @@ ltest('data and subleveldown ttl meta data separation', function (t, db, createR
   })
 })
 
-ltest('data and subleveldown ttl meta data separation (custom ttlEncoding)', function (t, db, createReadStream) {
+ltest('data and subleveldown ttl meta data separation (custom ttlEncoding)', function (t, db) {
   var meta = sublevel(db, 'meta')
   var ttldb = ttl(db, { sub: meta, ttlEncoding: bytewise })
   var batch = randomPutBatch(5)
@@ -708,7 +703,7 @@ ltest('data and subleveldown ttl meta data separation (custom ttlEncoding)', fun
 
   ttldb.batch(batch, { ttl: 10000 }, function (err) {
     t.ok(!err, 'no error')
-    db2arr(createReadStream, t, function (arr) {
+    db2arr(t, db, function (arr) {
       batch.forEach(function (item) {
         contains(t, arr, prefix(bwEncode([ item.key ])), bwRange())
         contains(t, arr, {
@@ -721,37 +716,37 @@ ltest('data and subleveldown ttl meta data separation (custom ttlEncoding)', fun
   })
 })
 
-ltest('that subleveldown data expires properly', function (t, db, createReadStream) {
+ltest('that subleveldown data expires properly', function (t, db) {
   var meta = sublevel(db, 'meta')
   var ttldb = ttl(db, { checkFrequency: 25, sub: meta })
 
   ttldb.batch(randomPutBatch(50), { ttl: 100 }, function (err) {
     t.ok(!err, 'no error')
-    verifyIn(200, createReadStream, t, function (arr) {
+    verifyIn(t, db, 200, function (arr) {
       t.equal(arr.length, 0, 'should be empty array')
       t.end()
     })
   })
 })
 
-ltest('that subleveldown data expires properly (custom ttlEncoding)', function (t, db, createReadStream) {
+ltest('that subleveldown data expires properly (custom ttlEncoding)', function (t, db) {
   var meta = sublevel(db, 'meta')
   var ttldb = ttl(db, { checkFrequency: 25, sub: meta, ttlEncoding: bytewise })
 
   ttldb.batch(randomPutBatch(50), { ttl: 100 }, function (err) {
     t.ok(!err, 'no error')
-    verifyIn(200, createReadStream, t, function (arr) {
+    verifyIn(t, db, 200, function (arr) {
       t.equal(arr.length, 0, 'should be empty array')
       t.end()
     })
   })
 })
 
-test('prolong entry with PUT should not duplicate the TTL key', function (t, db, createReadStream) {
+test('prolong entry with PUT should not duplicate the TTL key', function (t, db) {
   var retest = function (delay, cb) {
     setTimeout(function () {
       db.put('bar', 'barvalue', { ttl: 20 })
-      verifyIn(50, createReadStream, t, function (arr) {
+      verifyIn(t, db, 50, function (arr) {
         var count = arr.filter(function (kv) {
           return /!ttl!x!\d{13}!bar/.exec(kv.key)
         }).length
