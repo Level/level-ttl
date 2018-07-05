@@ -43,9 +43,8 @@ function ltest (desc, opts, cb) {
 
 function test (name, fn, opts) {
   ltest(name, opts, function (t, db) {
-    var close = db.close.bind(db)
     var ttlDb = ttl(db, xtend({ checkFrequency: 50 }, opts))
-    fn(t, ttlDb, close)
+    fn(t, ttlDb)
   })
 }
 
@@ -502,7 +501,7 @@ function wrappedTest () {
     return _clearInterval.apply(global, arguments)
   }
 
-  test('test stop() method stops interval and doesn\'t hold process up', function (t, db, close) {
+  test('test stop() method stops interval and doesn\'t hold process up', function (t, db) {
     t.equals(intervals, 1, '1 interval timer')
     db.put('foo', 'bar1', { ttl: 25 })
 
@@ -522,7 +521,7 @@ function wrappedTest () {
 
     setTimeout(function () {
       db.stop(function () {
-        close(function () {
+        db._ttl.close(function () {
           global.setInterval = _setInterval
           global.clearInterval = _clearInterval
           t.equals(0, intervals, 'all interval timers cleared')
@@ -535,133 +534,94 @@ function wrappedTest () {
 
 wrappedTest()
 
-function testSinglePutWithDefaultTtl (t, db) {
-  db.put('foo', 'foovalue', function (err) {
-    t.ok(!err, 'no error')
+function put (timeout, opts) {
+  return function (t, db) {
+    db.put('foo', 'foovalue', opts, function (err) {
+      t.ok(!err, 'no error')
 
-    setTimeout(function () {
-      db.get('foo', function (err, value) {
-        t.notOk(err, 'no error')
-        t.equal('foovalue', value)
-      })
-    }, 50)
-
-    setTimeout(function () {
-      db.get('foo', function (err, value) {
-        t.ok(err && err.notFound, 'not found error')
-        t.notOk(value, 'no value')
-        t.end()
-      })
-    }, 175)
-  })
-}
-
-test('single put with default ttl set', testSinglePutWithDefaultTtl, { defaultTTL: 75 })
-
-test('single put with default ttl set (custom ttlEncoding)', testSinglePutWithDefaultTtl, {
-  defaultTTL: 75,
-  ttlEncoding: bytewise
-})
-
-function testSinglePutWithTtlOverride (t, db) {
-  db.put('foo', 'foovalue', { ttl: 99 }, function (err) {
-    t.ok(!err, 'no error')
-    setTimeout(function () {
-      db.get('foo', function (err, value) {
-        t.notOk(err, 'no error')
-        t.equal('foovalue', value)
-      })
-    }, 50)
-
-    setTimeout(function () {
-      db.get('foo', function (err, value) {
-        t.ok(err && err.notFound, 'not found error')
-        t.notOk(value, 'no value')
-        t.end()
-      })
-    }, 200)
-  })
-}
-
-test('single put with overridden ttl set', testSinglePutWithTtlOverride, { defaultTTL: 75 })
-
-test('single put with overridden ttl set (custom ttlEncoding)', testSinglePutWithTtlOverride, {
-  defaultTTL: 75,
-  ttlEncoding: bytewise
-})
-
-function testBatchPutWithDefaultTtl (t, db) {
-  db.batch([
-    { type: 'put', key: 'foo', value: 'foovalue' },
-    { type: 'put', key: 'bar', value: 'barvalue' }
-  ], function (err) {
-    t.ok(!err, 'no error')
-    setTimeout(function () {
-      db.get('foo', function (err, value) {
-        t.notOk(err, 'no error')
-        t.equal('foovalue', value)
-        db.get('bar', function (err, value) {
+      setTimeout(function () {
+        db.get('foo', function (err, value) {
           t.notOk(err, 'no error')
-          t.equal('barvalue', value)
+          t.equal('foovalue', value)
         })
-      })
-    }, 50)
+      }, 50)
 
-    setTimeout(function () {
-      db.get('foo', function (err, value) {
-        t.ok(err && err.notFound, 'not found error')
-        t.notOk(value, 'no value')
-        db.get('bar', function (err, value) {
+      setTimeout(function () {
+        db.get('foo', function (err, value) {
           t.ok(err && err.notFound, 'not found error')
           t.notOk(value, 'no value')
           t.end()
         })
-      })
-    }, 175)
-  })
+      }, timeout)
+    })
+  }
 }
 
-test('batch put with default ttl set', testBatchPutWithDefaultTtl, { defaultTTL: 75 })
+test('single put with default ttl set', put(175), {
+  defaultTTL: 75
+})
 
-test('batch put with default ttl set (custom ttlEncoding)', testBatchPutWithDefaultTtl, {
+test('single put with default ttl set (custom ttlEncoding)', put(175), {
   defaultTTL: 75,
   ttlEncoding: bytewise
 })
 
-function testBatchPutWithTtlOverride (t, db) {
-  db.batch([
-    { type: 'put', key: 'foo', value: 'foovalue' },
-    { type: 'put', key: 'bar', value: 'barvalue' }
-  ], { ttl: 99 }, function (err) {
-    t.error(err, 'no error')
-    setTimeout(function () {
-      db.get('foo', function (err, value) {
-        t.notOk(err, 'no error')
-        t.equal('foovalue', value)
-        db.get('bar', function (err, value) {
-          t.notOk(err, 'no error')
-          t.equal('barvalue', value)
-        })
-      })
-    }, 50)
+test('single put with overridden ttl set', put(200, { ttl: 99 }), {
+  defaultTTL: 75
+})
 
-    setTimeout(function () {
-      db.get('foo', function (err, value) {
-        t.ok(err && err.notFound, 'not found error')
-        t.notOk(value, 'no value')
-        db.get('bar', function (err, value) {
+test('single put with overridden ttl set (custom ttlEncoding)', put(200, { ttl: 99 }), {
+  defaultTTL: 75,
+  ttlEncoding: bytewise
+})
+
+function batch (timeout, opts) {
+  return function (t, db) {
+    db.batch([
+      { type: 'put', key: 'foo', value: 'foovalue' },
+      { type: 'put', key: 'bar', value: 'barvalue' }
+    ], opts, function (err) {
+      t.ok(!err, 'no error')
+      setTimeout(function () {
+        db.get('foo', function (err, value) {
+          t.notOk(err, 'no error')
+          t.equal('foovalue', value)
+          db.get('bar', function (err, value) {
+            t.notOk(err, 'no error')
+            t.equal('barvalue', value)
+          })
+        })
+      }, 50)
+
+      setTimeout(function () {
+        db.get('foo', function (err, value) {
           t.ok(err && err.notFound, 'not found error')
           t.notOk(value, 'no value')
-          t.end()
+          db.get('bar', function (err, value) {
+            t.ok(err && err.notFound, 'not found error')
+            t.notOk(value, 'no value')
+            t.end()
+          })
         })
-      })
-    }, 200)
-  })
+      }, timeout)
+    })
+  }
 }
 
-test('batch put with overriden ttl set', testBatchPutWithTtlOverride, { defaultTTL: 75 })
+test('batch put with default ttl set', batch(175), {
+  defaultTTL: 75
+})
 
-test('batch put with overriden ttl set (custom ttlEncoding)', testBatchPutWithTtlOverride, {
+test('batch put with default ttl set (custom ttlEncoding)', batch(175), {
+  defaultTTL: 75,
+  ttlEncoding: bytewise
+})
+
+test('batch put with overriden ttl set', batch(200, { ttl: 99 }), {
+  defaultTTL: 75
+})
+
+test('batch put with overriden ttl set (custom ttlEncoding)', batch(200, { ttl: 99 }), {
   defaultTTL: 75,
   ttlEncoding: bytewise
 })
