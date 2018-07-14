@@ -1,6 +1,5 @@
 const tape = require('tape')
-const rimraf = require('rimraf')
-const LevelTest = require('level-test')
+const level = require('level-test')()
 const concat = require('level-concat-iterator')
 const ttl = require('./')
 const xtend = require('xtend')
@@ -16,23 +15,16 @@ function ltest (desc, opts, cb) {
   }
 
   tape(desc, function (t) {
-    var dbName = 'level-test-' + Date.now()
-    var levelup = LevelTest()
-
-    levelup(dbName, opts, function (err, db) {
+    level(opts, function (err, db) {
       t.error(err, 'no error on open()')
       t.ok(db, 'valid db object')
 
-      var location = db.db.db.location
       var end = t.end.bind(t)
 
       t.end = function () {
         db.close(function (err) {
           t.error(err, 'no error on close()')
-          rimraf(location, function (err) {
-            t.error(err, 'rimraf ok')
-            end()
-          })
+          end()
         })
       }
 
