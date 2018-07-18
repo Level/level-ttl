@@ -7,6 +7,7 @@
 [![Build Status](https://travis-ci.org/Level/level-ttl.svg?branch=master)](https://travis-ci.org/Level/level-ttl)
 [![Greenkeeper badge](https://badges.greenkeeper.io/Level/level-ttl.svg)](https://greenkeeper.io/)
 [![dependencies](https://david-dm.org/Level/level-ttl.svg)](https://david-dm.org/level/level-ttl)
+[![Coverage Status](https://coveralls.io/repos/github/Level/level-ttl/badge.svg)](https://coveralls.io/github/Level/level-ttl)
 [![JavaScript Style Guide](https://img.shields.io/badge/code_style-standard-brightgreen.svg)](https://standardjs.com)
 
 [![NPM](https://nodei.co/npm/level-ttl.png?downloads=true&downloadRank=true)](https://nodei.co/npm/level-ttl/)
