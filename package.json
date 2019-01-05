@@ -20,6 +20,7 @@
     "bytewise": ">=0.8",
     "coveralls": "^3.0.2",
     "hallmark": "^0.1.0",
+    "level-community": "^3.0.0",
     "level-concat-iterator": "^2.0.0",
     "level-test": "^5.0.0",
     "nyc": "^12.0.2",
