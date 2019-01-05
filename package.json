@@ -8,8 +8,9 @@
   "license": "MIT",
   "main": "./level-ttl.js",
   "scripts": {
-    "test": "standard && nyc node test.js",
-    "coverage": "nyc report --reporter=text-lcov | coveralls"
+    "test": "standard && hallmark && nyc node test.js",
+    "coverage": "nyc report --reporter=text-lcov | coveralls",
+    "hallmark": "hallmark --fix"
   },
   "dependencies": {
     "after": "~0.8.2",
