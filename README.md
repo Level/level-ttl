@@ -112,6 +112,6 @@ For more examples on this please check the tests involving `level-sublevel`.
 
 **Level TTL** uses a timer to regularly check for expiring entries (don't worry, the whole data store isn't scanned, it's very efficient!). The `db.close()` method is automatically wired to stop the timer but there is also a more explicit <b><code>db.stop()</code></b> method that will stop the timer and not pass on to a `close()` underlying LevelUP instance.
 
-## Licence
+## License
 
-[MIT](./LICENSE.md) © 2013-present Rod Vagg [@rvagg](https://twitter.com/rvagg) and [contributors](./CONTRIBUTORS.md).
+[MIT](LICENSE.md) © 2013-present Rod Vagg and [Contributors](CONTRIBUTORS.md).
