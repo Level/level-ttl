@@ -17,9 +17,9 @@ Augment LevelUP to handle a new `'ttl'` option on `put()` and `batch()` that spe
 
 Requires [LevelUP](https://github.com/rvagg/node-levelup), [Level](https://github.com/level/level) or [level-hyper](https://github.com/Level/level-hyper) to be installed separately.
 
-***Note 1: Version 1.0.0 data stores are not backward compatible with previous versions. If you have unexpired entries in a data store managed by pre-1.0.0, don't expect them to expire if you upgrade to 1.0.0+.*** *This is due to a level-sublevel change. It is also recommended that you only use level-sublevel 6.0.0+ with level-ttl.*
+**_Note 1: Version 1.0.0 data stores are not backward compatible with previous versions. If you have unexpired entries in a data store managed by pre-1.0.0, don't expect them to expire if you upgrade to 1.0.0+._** _This is due to a level-sublevel change. It is also recommended that you only use level-sublevel 6.0.0+ with level-ttl._
 
-***Note 2: `level-ttl` has partial support for `level-spaces`. It should work fine as long as you don't use the `'defaultTTL'` feature, see below. This is being worked on so we can have full support for `level-spaces` as well.***
+**_Note 2: `level-ttl` has partial support for `level-spaces`. It should work fine as long as you don't use the `'defaultTTL'` feature, see below. This is being worked on so we can have full support for `level-spaces` as well._**
 
 ```js
 var levelup  = require('level')
@@ -41,7 +41,7 @@ db.batch([
 ], { ttl: 1000 * 60 * 60 }, function (err) { /* .. */ })
 ```
 
-If you put the same entry twice, you **refresh** the TTL to the *last* put operation. In this way you can build utilities like [session managers](https://github.com/rvagg/node-level-session/) for your web application where the user's session is refreshed with each visit but expires after a set period of time since their last visit.
+If you put the same entry twice, you **refresh** the TTL to the _last_ put operation. In this way you can build utilities like [session managers](https://github.com/rvagg/node-level-session/) for your web application where the user's session is refreshed with each visit but expires after a set period of time since their last visit.
 
 Alternatively, for a lower write-footprint you can use the `ttl()` method that is added to your LevelUP instance which can serve to insert or update a ttl for any given key in the database (even if that key doesn't exist but may in the future! Crazy!).
 
@@ -60,7 +60,7 @@ db = ttl(db, { checkFrequency: 1000 })
 /* .. */
 ```
 
-Of course, a scan takes some resources, particularly on a data store that makes heavy use of TTLs. If you don't require high accuracy for actual deletions then you can increase the `'checkFrequency'`. Note though that a scan only involves invoking a LevelUP ReadStream that returns *only the entries due to expire*, so it doesn't have to manually check through all entries with a TTL. As usual, it's best to not do too much tuning until you have you have something worth tuning!
+Of course, a scan takes some resources, particularly on a data store that makes heavy use of TTLs. If you don't require high accuracy for actual deletions then you can increase the `'checkFrequency'`. Note though that a scan only involves invoking a LevelUP ReadStream that returns _only the entries due to expire_, so it doesn't have to manually check through all entries with a TTL. As usual, it's best to not do too much tuning until you have you have something worth tuning!
 
 ### Default TTL
 
@@ -107,11 +107,18 @@ db.batch(batch, { ttl: 100 }, function (err) {
 
 For more examples on this please check the tests involving `level-sublevel`.
 
-
 ### Shutting down
 
 **Level TTL** uses a timer to regularly check for expiring entries (don't worry, the whole data store isn't scanned, it's very efficient!). The `db.close()` method is automatically wired to stop the timer but there is also a more explicit <b><code>db.stop()</code></b> method that will stop the timer and not pass on to a `close()` underlying LevelUP instance.
 
-## Licence
+## Contributing
 
-[MIT](./LICENSE.md) © 2013-present Rod Vagg [@rvagg](https://twitter.com/rvagg) and [contributors](./CONTRIBUTORS.md).
+[`Level/level-ttl`](https://github.com/Level/level-ttl) is an **OPEN Open Source Project**. This means that:
+
+> Individuals making significant and valuable contributions are given commit-access to the project to contribute as they see fit. This project is more like an open wiki than a standard guarded open source project.
+
+See the [Contribution Guide](https://github.com/Level/community/blob/master/CONTRIBUTING.md) for more details.
+
+## License
+
+[MIT](LICENSE.md) © 2013-present Rod Vagg and [Contributors](CONTRIBUTORS.md).
