@@ -30,6 +30,9 @@
     "tape": "^4.3.0"
   },
   "peerDependencies": {},
+  "hallmark": {
+    "community": "level-community"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/level/level-ttl.git"
