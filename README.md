@@ -8,7 +8,6 @@
 [![Coverage Status](https://coveralls.io/repos/github/Level/level-ttl/badge.svg)](https://coveralls.io/github/Level/level-ttl)
 [![JavaScript Style Guide](https://img.shields.io/badge/code_style-standard-brightgreen.svg)](https://standardjs.com)
 
-[![NPM](https://nodei.co/npm/level-ttl.png?downloads=true&downloadRank=true)](https://nodei.co/npm/level-ttl/)
 [![NPM](https://nodei.co/npm-dl/level-ttl.png?months=6&height=3)](https://nodei.co/npm/level-ttl/)
 [![Backers on Open Collective](https://opencollective.com/level/backers/badge.svg?color=orange)](#backers)
 [![Sponsors on Open Collective](https://opencollective.com/level/sponsors/badge.svg?color=orange)](#sponsors)
