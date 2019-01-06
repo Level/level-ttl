@@ -4,9 +4,7 @@
 
 **Add a `'ttl'` (time-to-live) option to LevelUP for `put()` and `batch()`**
 
-[![Build Status](https://travis-ci.org/Level/level-ttl.svg?branch=master)](https://travis-ci.org/Level/level-ttl)
-[![Greenkeeper badge](https://badges.greenkeeper.io/Level/level-ttl.svg)](https://greenkeeper.io/)
-[![dependencies](https://david-dm.org/Level/level-ttl.svg)](https://david-dm.org/level/level-ttl)
+[![Travis](https://img.shields.io/travis/Level/level-ttl.svg?logo=travis&label=)](https://travis-ci.org/Level/level-ttl)
 [![Coverage Status](https://coveralls.io/repos/github/Level/level-ttl/badge.svg)](https://coveralls.io/github/Level/level-ttl)
 [![JavaScript Style Guide](https://img.shields.io/badge/code_style-standard-brightgreen.svg)](https://standardjs.com)
 
@@ -17,7 +15,7 @@
 
 Augment LevelUP to handle a new `'ttl'` option on `put()` and `batch()` that specifies the number of milliseconds an entry should remain in the data store. After the TTL, the entry will be automatically cleared for you.
 
-Requires [LevelUP](https://github.com/rvagg/node-levelup), [Level](https://github.com/level/level) or [level-hyper](https://github.com/Level/level-hyper) to be installed separately.
+Requires [LevelUP](https://github.com/Level/levelup), [Level](https://github.com/Level/level) or [level-hyper](https://github.com/Level/level-hyper) to be installed separately.
 
 **_Note 1: Version 1.0.0 data stores are not backward compatible with previous versions. If you have unexpired entries in a data store managed by pre-1.0.0, don't expect them to expire if you upgrade to 1.0.0+._** _This is due to a level-sublevel change. It is also recommended that you only use level-sublevel 6.0.0+ with level-ttl._
 
