@@ -10,7 +10,9 @@
   "scripts": {
     "test": "standard && hallmark && nyc node test.js",
     "coverage": "nyc report --reporter=text-lcov | coveralls",
-    "hallmark": "hallmark --fix"
+    "hallmark": "hallmark --fix",
+    "dependency-check": "dependency-check . test.js",
+    "prepublishOnly": "npm run dependency-check"
   },
   "dependencies": {
     "after": "~0.8.2",
@@ -20,6 +22,7 @@
   "devDependencies": {
     "bytewise": ">=0.8",
     "coveralls": "^3.0.2",
+    "dependency-check": "^3.3.0",
     "hallmark": "^0.1.0",
     "level-community": "^3.0.0",
     "level-concat-iterator": "^2.0.0",
