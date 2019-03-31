@@ -47,5 +47,8 @@
     "levelup",
     "level",
     "ttl"
-  ]
+  ],
+  "engines": {
+    "node": ">=6"
+  }
 }
