@@ -161,8 +161,8 @@ test('single ttl entry with put (custom ttlEncoding)', function (t, db) {
     db.put('bar', 'barvalue', { ttl: 100 }, function (err) {
       t.notOk(err, 'no error')
       db2arr(t, db, function (arr) {
-        contains(t, arr, bwRange([ 'ttl', 'x' ]), bwEncode('bar'))
-        contains(t, arr, bwEncode([ 'ttl', 'bar' ]), bwRange())
+        contains(t, arr, bwRange(['ttl', 'x']), bwEncode('bar'))
+        contains(t, arr, bwEncode(['ttl', 'bar']), bwRange())
         contains(t, arr, Buffer.from('bar'), Buffer.from('barvalue'))
         contains(t, arr, Buffer.from('foo'), Buffer.from('foovalue'))
         verifyIn(t, db, 150, function (arr) {
@@ -218,18 +218,18 @@ test('multiple ttl entries with put (custom ttlEncoding)', function (t, db) {
       contains(t, arr, Buffer.from('afoo'), Buffer.from('foovalue'))
       if (keys >= 1) {
         contains(t, arr, Buffer.from('bar1'), Buffer.from('barvalue1'))
-        contains(t, arr, bwRange([ 'ttl', 'x' ]), bwEncode('bar1'))
-        contains(t, arr, bwEncode([ 'ttl', 'bar1' ]), bwRange())
+        contains(t, arr, bwRange(['ttl', 'x']), bwEncode('bar1'))
+        contains(t, arr, bwEncode(['ttl', 'bar1']), bwRange())
       }
       if (keys >= 2) {
         contains(t, arr, Buffer.from('bar2'), Buffer.from('barvalue2'))
-        contains(t, arr, bwRange([ 'ttl', 'x' ]), bwEncode('bar2'))
-        contains(t, arr, bwEncode([ 'ttl', 'bar2' ]), bwRange())
+        contains(t, arr, bwRange(['ttl', 'x']), bwEncode('bar2'))
+        contains(t, arr, bwEncode(['ttl', 'bar2']), bwRange())
       }
       if (keys >= 3) {
         contains(t, arr, Buffer.from('bar3'), Buffer.from('barvalue3'))
-        contains(t, arr, bwRange([ 'ttl', 'x' ]), bwEncode('bar3'))
-        contains(t, arr, bwEncode([ 'ttl', 'bar3' ]), bwRange())
+        contains(t, arr, bwRange(['ttl', 'x']), bwEncode('bar3'))
+        contains(t, arr, bwEncode(['ttl', 'bar3']), bwRange())
       }
       cb && cb()
     }, { keyEncoding: 'binary', valueEncoding: 'binary' })
@@ -295,23 +295,23 @@ test('multiple ttl entries with batch-put (custom ttlEncoding)', function (t, db
       contains(t, arr, Buffer.from('afoo'), Buffer.from('foovalue'))
       if (keys >= 1) {
         contains(t, arr, Buffer.from('bar1'), Buffer.from('barvalue1'))
-        contains(t, arr, bwRange([ 'ttl', 'x' ]), bwEncode('bar1'))
-        contains(t, arr, bwEncode([ 'ttl', 'bar1' ]), bwRange())
+        contains(t, arr, bwRange(['ttl', 'x']), bwEncode('bar1'))
+        contains(t, arr, bwEncode(['ttl', 'bar1']), bwRange())
       }
       if (keys >= 2) {
         contains(t, arr, Buffer.from('bar2'), Buffer.from('barvalue2'))
-        contains(t, arr, bwRange([ 'ttl', 'x' ]), bwEncode('bar2'))
-        contains(t, arr, bwEncode([ 'ttl', 'bar2' ]), bwRange())
+        contains(t, arr, bwRange(['ttl', 'x']), bwEncode('bar2'))
+        contains(t, arr, bwEncode(['ttl', 'bar2']), bwRange())
       }
       if (keys >= 3) {
         contains(t, arr, Buffer.from('bar3'), Buffer.from('barvalue3'))
-        contains(t, arr, bwRange([ 'ttl', 'x' ]), bwEncode('bar3'))
-        contains(t, arr, bwEncode([ 'ttl', 'bar3' ]), bwRange())
+        contains(t, arr, bwRange(['ttl', 'x']), bwEncode('bar3'))
+        contains(t, arr, bwEncode(['ttl', 'bar3']), bwRange())
       }
       if (keys >= 3) {
         contains(t, arr, Buffer.from('bar4'), Buffer.from('barvalue4'))
-        contains(t, arr, bwRange([ 'ttl', 'x' ]), bwEncode('bar4'))
-        contains(t, arr, bwEncode([ 'ttl', 'bar4' ]), bwRange())
+        contains(t, arr, bwRange(['ttl', 'x']), bwEncode('bar4'))
+        contains(t, arr, bwEncode(['ttl', 'bar4']), bwRange())
       }
       cb && cb()
     }, { keyEncoding: 'binary', valueEncoding: 'binary' })
@@ -357,8 +357,8 @@ test('prolong entry life with additional put (custom ttlEncoding)', function (t,
       verifyIn(t, db, 50, function (arr) {
         contains(t, arr, Buffer.from('foo'), Buffer.from('foovalue'))
         contains(t, arr, Buffer.from('bar'), Buffer.from('barvalue'))
-        contains(t, arr, bwRange([ 'ttl', 'x' ]), bwEncode('bar'))
-        contains(t, arr, bwEncode([ 'ttl', 'bar' ]), bwRange())
+        contains(t, arr, bwRange(['ttl', 'x']), bwEncode('bar'))
+        contains(t, arr, bwEncode(['ttl', 'bar']), bwRange())
         cb && cb()
       }, { keyEncoding: 'binary', valueEncoding: 'binary' })
     }, delay)
@@ -396,8 +396,8 @@ test('prolong entry life with ttl(key, ttl) (custom ttlEncoding)', function (t, 
       verifyIn(t, db, 25, function (arr) {
         contains(t, arr, Buffer.from('bar'), Buffer.from('barvalue'))
         contains(t, arr, Buffer.from('foo'), Buffer.from('foovalue'))
-        contains(t, arr, bwRange([ 'ttl', 'x' ]), bwEncode('bar'))
-        contains(t, arr, bwEncode([ 'ttl', 'bar' ]), bwRange())
+        contains(t, arr, bwRange(['ttl', 'x']), bwEncode('bar'))
+        contains(t, arr, bwEncode(['ttl', 'bar']), bwRange())
         cb && cb()
       }, { keyEncoding: 'binary', valueEncoding: 'binary' })
     }, delay)
@@ -462,8 +462,8 @@ test('del removes both key and its ttl meta data (custom ttlEncoding)', function
   verifyIn(t, db, 50, function (arr) {
     contains(t, arr, Buffer.from('foo'), Buffer.from('{"v":"foovalue"}'))
     contains(t, arr, Buffer.from('bar'), Buffer.from('{"v":"barvalue"}'))
-    contains(t, arr, bwRange([ 'ttl', 'x' ]), bwEncode('bar'))
-    contains(t, arr, bwEncode([ 'ttl', 'bar' ]), bwRange())
+    contains(t, arr, bwRange(['ttl', 'x']), bwEncode('bar'))
+    contains(t, arr, bwEncode(['ttl', 'bar']), bwRange())
   }, { keyEncoding: 'binary', valueEncoding: 'binary' })
 
   setTimeout(function () {
@@ -650,17 +650,17 @@ ltest('data and subleveldown ttl meta data separation (custom ttlEncoding)', fun
   var batch = randomPutBatch(5)
 
   function prefix (buf) {
-    return Buffer.concat([ Buffer.from('!meta!'), buf ])
+    return Buffer.concat([Buffer.from('!meta!'), buf])
   }
 
   ttldb.batch(batch, { ttl: 10000 }, function (err) {
     t.ok(!err, 'no error')
     db2arr(t, db, function (arr) {
       batch.forEach(function (item) {
-        contains(t, arr, prefix(bwEncode([ item.key ])), bwRange())
+        contains(t, arr, prefix(bwEncode([item.key])), bwRange())
         contains(t, arr, {
-          gt: prefix(bwEncode([ 'x', new Date(0), item.key ])),
-          lt: prefix(bwEncode([ 'x', new Date(9999999999999), item.key ]))
+          gt: prefix(bwEncode(['x', new Date(0), item.key])),
+          lt: prefix(bwEncode(['x', new Date(9999999999999), item.key]))
         }, bwEncode(item.key))
       })
       t.end()
