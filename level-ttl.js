@@ -165,7 +165,7 @@ function put (db, key, value, options, callback) {
   if (options.ttl > 0 && key != null && value != null) {
     done = after(2, _callback || function () {})
     callback = done
-    ttlon(db, [ key ], options.ttl, done)
+    ttlon(db, [key], options.ttl, done)
   }
 
   db._ttl.put.call(db, key, value, options, callback)
@@ -173,7 +173,7 @@ function put (db, key, value, options, callback) {
 
 function setTtl (db, key, ttl, callback) {
   if (ttl > 0 && key != null) {
-    ttlon(db, [ key ], ttl, callback)
+    ttlon(db, [key], ttl, callback)
   }
 }
 
@@ -184,7 +184,7 @@ function del (db, key, options, callback) {
   if (key != null) {
     done = after(2, _callback || function () {})
     callback = done
-    ttloff(db, [ key ], done)
+    ttloff(db, [key], done)
   }
 
   db._ttl.del.call(db, key, options, callback)
@@ -259,7 +259,7 @@ function setup (db, options) {
     defaultTTL: 0
   }, options)
 
-  const _prefixNs = options.namespace ? [ options.namespace ] : []
+  const _prefixNs = options.namespace ? [options.namespace] : []
 
   db._ttl = {
     put: db.put.bind(db),
