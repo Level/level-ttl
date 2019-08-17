@@ -171,15 +171,16 @@ function put (db, key, value, options, callback) {
     options.ttl = db._ttl.options.defaultTTL
   }
 
-  var done
-  var _callback = callback
-
   if (options.ttl > 0 && key != null && value != null) {
-    done = after(2, _callback || function () {})
-    callback = done
-    ttlon(db, [key], options.ttl, done)
+    // TODO: batch together with actual key
+    return ttlon(db, [key], options.ttl, function (err) {
+      if (err) return callback(err)
+
+      db._ttl.put.call(db, key, value, options, callback)
+    })
   }
 
+  // TODO: remove existing TTL if any?
   db._ttl.put.call(db, key, value, options, callback)
 }
 
@@ -190,13 +191,14 @@ function setTtl (db, key, ttl, callback) {
 }
 
 function del (db, key, options, callback) {
-  var done
-  var _callback = callback
-
   if (key != null) {
-    done = after(2, _callback || function () {})
-    callback = done
-    ttloff(db, [key], done)
+    // TODO: batch together with actual key
+    // TODO: or even skip this, should get swept up anyway
+    return ttloff(db, [key], function (err) {
+      if (err) return callback(err)
+
+      db._ttl.del.call(db, key, options, callback)
+    })
   }
 
   db._ttl.del.call(db, key, options, callback)
@@ -217,11 +219,9 @@ function batch (db, arr, options, callback) {
   var done
   var on
   var off
-  var _callback = callback
 
   if (options.ttl > 0 && Array.isArray(arr)) {
-    done = after(3, _callback || function () {})
-    callback = done
+    done = after(2, write)
 
     on = []
     off = []
@@ -232,20 +232,19 @@ function batch (db, arr, options, callback) {
       if (entry.type === 'del') off.push(entry.key)
     })
 
-    if (on.length) {
-      ttlon(db, on, options.ttl, done)
-    } else {
-      done()
-    }
-
-    if (off.length) {
-      ttloff(db, off, done)
-    } else {
-      done()
-    }
+    // TODO: batch could contain a key twice. perhaps do on and off sequentially.
+    // TODO: better yet, perform both in one batch.
+    ttlon(db, on, options.ttl, done)
+    ttloff(db, off, done)
+  } else {
+    write()
   }
 
-  db._ttl.batch.call(db, arr, options, callback)
+  function write (err) {
+    if (err) return callback(err)
+
+    db._ttl.batch.call(db, arr, options, callback)
+  }
 }
 
 function close (db, callback) {
