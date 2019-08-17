@@ -253,7 +253,7 @@ function close (db, callback) {
     if (db._ttl && typeof db._ttl.close === 'function') {
       return db._ttl.close.call(db, callback)
     }
-    callback && callback()
+    callback && process.nextTick(callback)
   })
 }
 
