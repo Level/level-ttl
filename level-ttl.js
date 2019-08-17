@@ -106,7 +106,7 @@ function stopTtl (db, callback) {
     return db._ttl._stopAfterCheck
   }
   clearInterval(db._ttl.intervalId)
-  callback && callback()
+  callback()
 }
 
 function ttlon (db, keys, ttl, callback) {
@@ -119,7 +119,7 @@ function ttlon (db, keys, ttl, callback) {
   const encode = db._ttl.encoding.encode
 
   db._ttl._lock(keys, function (release) {
-    callback = release(callback || function () {})
+    callback = release(callback)
     ttloff(db, keys, function () {
       keys.forEach(function (key) {
         batch.push({ type: 'put', key: expiryKey(db, exp, key), value: encode(key) })
@@ -135,7 +135,7 @@ function ttlon (db, keys, ttl, callback) {
 }
 
 function ttloff (db, keys, callback) {
-  if (!keys.length) return callback && process.nextTick(callback)
+  if (!keys.length) return process.nextTick(callback)
 
   const batch = []
   const sub = db._ttl.sub
@@ -147,7 +147,7 @@ function ttloff (db, keys, callback) {
 
     batchFn(batch, { keyEncoding: 'binary', valueEncoding: 'binary' }, function (err) {
       if (err) { db.emit('error', err) }
-      callback && callback()
+      callback()
     })
   })
 
@@ -167,6 +167,8 @@ function put (db, key, value, options, callback) {
   if (typeof options === 'function') {
     callback = options
     options = {}
+  } else if (typeof callback !== 'function') {
+    throw new Error('put() requires a callback argument')
   }
 
   options || (options = {})
@@ -195,6 +197,13 @@ function setTtl (db, key, ttl, callback) {
 }
 
 function del (db, key, options, callback) {
+  if (typeof options === 'function') {
+    callback = options
+    options = {}
+  } else if (typeof callback !== 'function') {
+    throw new Error('del() requires a callback argument')
+  }
+
   if (key != null) {
     // TODO: batch together with actual key
     // TODO: or even skip this, should get swept up anyway
@@ -212,6 +221,8 @@ function batch (db, arr, options, callback) {
   if (typeof options === 'function') {
     callback = options
     options = {}
+  } else if (typeof callback !== 'function') {
+    throw new Error('batch() requires a callback argument')
   }
 
   options || (options = {})
@@ -252,11 +263,15 @@ function batch (db, arr, options, callback) {
 }
 
 function close (db, callback) {
+  if (typeof callback !== 'function') {
+    throw new Error('close() requires a callback argument')
+  }
+
   stopTtl(db, function () {
     if (db._ttl && typeof db._ttl.close === 'function') {
       return db._ttl.close.call(db, callback)
     }
-    callback && process.nextTick(callback)
+    process.nextTick(callback)
   })
 }
 
