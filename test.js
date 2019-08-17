@@ -10,13 +10,16 @@ const random = require('slump')
 const bytewise = require('bytewise')
 const bwEncode = bytewise.encode
 
-function ltest (desc, opts, cb) {
+function ltest (desc, opts, cb, tapeOpts) {
   if (typeof opts === 'function') {
     cb = opts
     opts = {}
   }
 
-  tape(desc, function (t) {
+  tapeOpts = tapeOpts || {}
+  var testFn = tapeOpts.only ? tape.only : tapeOpts.skip ? tape.skip : tape
+
+  testFn(desc, function (t) {
     level(opts, function (err, db) {
       t.error(err, 'no error on open()')
       t.ok(db, 'valid db object')
@@ -35,11 +38,19 @@ function ltest (desc, opts, cb) {
   })
 }
 
-function test (name, fn, opts) {
+function test (name, fn, opts, tapeOpts) {
   ltest(name, opts, function (t, db) {
     var ttlDb = ttl(db, xtend({ checkFrequency: 50 }, opts))
     fn(t, ttlDb)
-  })
+  }, tapeOpts)
+}
+
+test.only = function (name, fn, opts) {
+  test(name, fn, opts, { only: true })
+}
+
+test.skip = function (name, fn, opts) {
+  test(name, fn, opts, { skip: true })
 }
 
 function db2arr (t, db, callback, opts) {
