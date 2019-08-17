@@ -16,6 +16,8 @@ function expiryKey (db, exp, key) {
 function buildQuery (db) {
   const encode = db._ttl.encoding.encode
   const expiryNs = db._ttl._expiryNs
+
+  // TODO: add limit (esp. important when checkInterval is long)
   return {
     keyEncoding: 'binary',
     valueEncoding: 'binary',
@@ -31,51 +33,57 @@ function startTtl (db, checkFrequency) {
     const sub = db._ttl.sub
     const query = buildQuery(db)
     const decode = db._ttl.encoding.decode
-    var createReadStream
+    const it = (sub || db).iterator(query)
 
     db._ttl._checkInProgress = true
+    next()
 
-    if (sub) {
-      createReadStream = sub.createReadStream.bind(sub)
-    } else {
-      createReadStream = db.createReadStream.bind(db)
+    function next () {
+      it.next(function (err, key, value) {
+        if (err) {
+          it.end(function () {
+            doneReading(err)
+          })
+        } else if (key === undefined) {
+          it.end(doneReading)
+        } else {
+          // the value is the key!
+          const realKey = decode(value)
+
+          // expiryKey that matches this query
+          subBatch.push({ type: 'del', key: key })
+          subBatch.push({ type: 'del', key: prefixKey(db, realKey) })
+
+          // the actual data that should expire now!
+          batch.push({ type: 'del', key: realKey })
+
+          next()
+        }
+      })
     }
 
-    createReadStream(query)
-      .on('data', function (data) {
-        // the value is the key!
-        const key = decode(data.value)
-        // expiryKey that matches this query
-        subBatch.push({ type: 'del', key: data.key })
-        subBatch.push({ type: 'del', key: prefixKey(db, key) })
-        // the actual data that should expire now!
-        batch.push({ type: 'del', key: key })
-      })
-      .on('error', db.emit.bind(db, 'error'))
-      .on('end', function () {
-        if (!batch.length) return
+    function doneReading (err) {
+      if (err || !batch.length) {
+        doneWriting(err)
+      } else if (sub) {
+        const next = after(2, doneWriting)
+        sub.batch(subBatch, { keyEncoding: 'binary' }, next)
+        db._ttl.batch(batch, { keyEncoding: 'binary' }, next)
+      } else {
+        db._ttl.batch(subBatch.concat(batch), { keyEncoding: 'binary' }, doneWriting)
+      }
+    }
 
-        if (sub) {
-          sub.batch(subBatch, { keyEncoding: 'binary' }, function (err) {
-            if (err) db.emit('error', err)
-          })
+    function doneWriting (err) {
+      if (err) db.emit('error', err)
 
-          db._ttl.batch(batch, { keyEncoding: 'binary' }, function (err) {
-            if (err) db.emit('error', err)
-          })
-        } else {
-          db._ttl.batch(subBatch.concat(batch), { keyEncoding: 'binary' }, function (err) {
-            if (err) db.emit('error', err)
-          })
-        }
-      })
-      .on('close', function () {
-        db._ttl._checkInProgress = false
-        if (db._ttl._stopAfterCheck) {
-          stopTtl(db, db._ttl._stopAfterCheck)
-          db._ttl._stopAfterCheck = null
-        }
-      })
+      db._ttl._checkInProgress = false
+
+      if (db._ttl._stopAfterCheck) {
+        stopTtl(db, db._ttl._stopAfterCheck)
+        db._ttl._stopAfterCheck = null
+      }
+    }
   }, checkFrequency)
 
   if (db._ttl.intervalId.unref) {
