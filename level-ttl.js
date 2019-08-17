@@ -81,6 +81,10 @@ function startTtl (db, checkFrequency) {
 
       db._ttl._checkInProgress = false
 
+      // Exposed for unit tests
+      // TODO: also use this for _stopAfterCheck
+      db.emit('ttl:sweep')
+
       if (db._ttl._stopAfterCheck) {
         stopTtl(db, db._ttl._stopAfterCheck)
         db._ttl._stopAfterCheck = null
