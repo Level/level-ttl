@@ -28,6 +28,8 @@ function buildQuery (db) {
 
 function startTtl (db, checkFrequency) {
   db._ttl.intervalId = setInterval(function () {
+    if (db._ttl._checkInProgress) return
+
     const batch = []
     const subBatch = []
     const sub = db._ttl.sub
