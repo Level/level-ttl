@@ -26,7 +26,7 @@ function buildQuery (db) {
   }
 }
 
-function startTtl (db, checkFrequency) {
+function startTtl (db, checkFrequency, setInterval) {
   db._ttl.intervalId = setInterval(function () {
     if (db._ttl._checkInProgress) return
 
@@ -80,15 +80,7 @@ function startTtl (db, checkFrequency) {
       if (err) db.emit('error', err)
 
       db._ttl._checkInProgress = false
-
-      // Exposed for unit tests
-      // TODO: also use this for _stopAfterCheck
       db.emit('ttl:sweep')
-
-      if (db._ttl._stopAfterCheck) {
-        stopTtl(db, db._ttl._stopAfterCheck)
-        db._ttl._stopAfterCheck = null
-      }
     }
   }, checkFrequency)
 
@@ -98,15 +90,15 @@ function startTtl (db, checkFrequency) {
 }
 
 function stopTtl (db, callback) {
+  db._ttl.options.clearInterval.call(null, db._ttl.intervalId)
+
   // can't close a db while an interator is in progress
   // so if one is, defer
   if (db._ttl._checkInProgress) {
-    db._ttl._stopAfterCheck = callback
-    // TODO do we really need to return the callback here?
-    return db._ttl._stopAfterCheck
+    db.once('ttl:sweep', callback)
+  } else {
+    process.nextTick(callback)
   }
-  clearInterval(db._ttl.intervalId)
-  callback()
 }
 
 function ttlon (db, keys, ttl, callback) {
@@ -268,6 +260,7 @@ function close (db, callback) {
   }
 
   stopTtl(db, function () {
+    // TODO: when/why is db._ttl not defined?
     if (db._ttl && typeof db._ttl.close === 'function') {
       return db._ttl.close.call(db, callback)
     }
@@ -286,6 +279,8 @@ function setup (db, options) {
     expiryNamespace: 'x',
     separator: '!',
     checkFrequency: 10000,
+    setInterval: global.setInterval,
+    clearInterval: global.clearInterval,
     defaultTTL: 0
   }, options)
 
@@ -312,7 +307,7 @@ function setup (db, options) {
   // we must intercept close()
   db.close = close.bind(null, db)
 
-  startTtl(db, options.checkFrequency)
+  startTtl(db, options.checkFrequency, options.setInterval)
 
   return db
 }

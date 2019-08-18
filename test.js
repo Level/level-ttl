@@ -517,56 +517,37 @@ test.skip('del removes both key and its ttl meta data (custom ttlEncoding)', fun
   }, { valueEncoding: 'utf8' })
 }, { keyEncoding: 'utf8', valueEncoding: 'json', ttlEncoding: bytewise })
 
-// TODO: rewrite to be less sensitive and more a unit test
-// eslint-disable-next-line no-unused-vars
-function wrappedTest () {
-  var intervals = 0
-  var _setInterval = global.setInterval
-  var _clearInterval = global.clearInterval
+{
+  let intervals = 0
 
-  global.setInterval = function () {
-    intervals++
-    return _setInterval.apply(global, arguments)
-  }
-
-  global.clearInterval = function () {
-    intervals--
-    return _clearInterval.apply(global, arguments)
-  }
-
-  test('test stop() method stops interval and doesn\'t hold process up', function (t, db) {
+  test('test stop() method stops interval', function (t, db) {
     t.equals(intervals, 1, '1 interval timer')
-    db.put('foo', 'bar1', { ttl: 25 })
 
-    setTimeout(function () {
-      db.get('foo', function (err, value) {
-        t.notOk(err, 'no error')
-        t.equal('bar1', value)
-      })
-    }, 40)
+    db.put('foo', 'bar1', { ttl: 25 }, function (err) {
+      t.ifError(err, 'no put error')
 
-    setTimeout(function () {
-      db.get('foo', function (err, value) {
-        t.ok(err && err.notFound, 'not found error')
-        t.notOk(value, 'no value')
-      })
-    }, 80)
+      waitForSweep(db, function () {
+        db.get('foo', function (err) {
+          t.ok(err && err.notFound, 'not found error')
 
-    setTimeout(function () {
-      db.stop(function () {
-        db._ttl.close(function () {
-          global.setInterval = _setInterval
-          global.clearInterval = _clearInterval
-          t.equals(0, intervals, 'all interval timers cleared')
-          t.end()
+          db.stop(function () {
+            t.equals(0, intervals, 'all interval timers cleared')
+            db._ttl.close(t.end.bind(t))
+          })
         })
       })
-    }, 120)
+    })
+  }, {
+    setInterval: function () {
+      intervals++
+      return setInterval.apply(null, arguments)
+    },
+    clearInterval: function () {
+      intervals--
+      return clearInterval.apply(null, arguments)
+    }
   })
 }
-
-// TODO: restore
-// wrappedTest()
 
 // TODO: rewrite to be less sensitive and more a unit test
 function put (timeout, opts) {
