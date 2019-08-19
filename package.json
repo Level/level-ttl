@@ -29,7 +29,7 @@
     "level-test": "^6.0.0",
     "nyc": "^14.0.0",
     "slump": "^3.0.0",
-    "standard": "^13.0.1",
+    "standard": "^14.0.0",
     "subleveldown": "^4.0.0",
     "tape": "^4.3.0"
   },
