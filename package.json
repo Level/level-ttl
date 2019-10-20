@@ -27,7 +27,7 @@
     "hallmark": "^2.0.0",
     "level-community": "^3.0.0",
     "level-concat-iterator": "^2.0.0",
-    "level-test": "^6.0.0",
+    "level-test": "^8.0.0",
     "nyc": "^14.0.0",
     "slump": "^3.0.0",
     "standard": "^14.0.0",
