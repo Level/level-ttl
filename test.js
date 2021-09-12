@@ -153,8 +153,8 @@ function verifyIn (t, db, delay, cb, opts) {
 }
 
 test('single ttl entry', function (t, db) {
-  t.throws(db.put.bind(db), { name: 'WriteError', message: 'put() requires key and value arguments' })
-  t.throws(db.del.bind(db), { name: 'WriteError', message: 'del() requires a key argument' })
+  t.throws(db.put.bind(db), /^Error: put\(\) requires a callback argument$/)
+  t.throws(db.del.bind(db), /^Error: del\(\) requires a callback argument$/)
   t.end()
 })
 
