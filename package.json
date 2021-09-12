@@ -9,11 +9,15 @@
   "main": "./level-ttl.js",
   "scripts": {
     "test": "standard && hallmark && (nyc -s node test.js | faucet) && nyc report",
-    "coverage": "nyc report --reporter=text-lcov | coveralls",
+    "coverage": "nyc report -r lcovonly",
     "hallmark": "hallmark --fix",
     "dependency-check": "dependency-check . test.js",
     "prepublishOnly": "npm run dependency-check"
   },
+  "files": [
+    "encoding.js",
+    "level-ttl.js"
+  ],
   "dependencies": {
     "after": "~0.8.2",
     "lock": "~1.1.0",
@@ -21,11 +25,9 @@
   },
   "devDependencies": {
     "bytewise": ">=0.8",
-    "coveralls": "^3.0.2",
     "dependency-check": "^3.3.0",
     "faucet": "^0.0.1",
     "hallmark": "^2.0.0",
-    "level-community": "^3.0.0",
     "level-concat-iterator": "^2.0.0",
     "level-test": "^6.0.0",
     "nyc": "^14.0.0",
@@ -35,9 +37,6 @@
     "tape": "^4.3.0"
   },
   "peerDependencies": {},
-  "hallmark": {
-    "community": "level-community"
-  },
   "repository": {
     "type": "git",
     "url": "https://github.com/Level/level-ttl.git"
