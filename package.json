@@ -30,11 +30,11 @@
     "hallmark": "^3.1.0",
     "level-concat-iterator": "^3.0.0",
     "level-test": "^9.0.0",
-    "nyc": "^14.0.0",
+    "nyc": "^15.1.0",
     "slump": "^3.0.0",
     "standard": "^16.0.3",
     "subleveldown": "^5.0.1",
-    "tape": "^4.3.0"
+    "tape": "^5.3.1"
   },
   "peerDependencies": {},
   "repository": {
