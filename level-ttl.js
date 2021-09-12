@@ -1,3 +1,5 @@
+'use strict'
+
 const after = require('after')
 const xtend = require('xtend')
 const encoding = require('./encoding')

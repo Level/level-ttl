@@ -1,3 +1,5 @@
+'use strict'
+
 exports.create = function createEncoding (options) {
   options || (options = {})
 

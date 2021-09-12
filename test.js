@@ -1,3 +1,5 @@
+'use strict'
+
 const tape = require('tape')
 const level = require('level-test')()
 const concat = require('level-concat-iterator')
